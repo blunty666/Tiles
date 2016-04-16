@@ -1,0 +1,288 @@
+--===== UTILITIES =====--
+local function makeMetatable(methodsTable)
+	return {
+		__index = function(t, k)
+			return methodsTable[k] or t.tile[k]
+		end,
+	}
+end
+
+local function createBackground(tile, xPos, yPos, zPos, width, height, opacity)
+	local background = tile:AddBox(xPos, yPos, width, height, 0x000000, opacity)
+	background:SetZ(zPos)
+	return background
+end
+
+local function createAxis(tile, xPos, yPos, zPos, width, height, opacity)
+	local points = {
+		{x = xPos, y = yPos},
+		{x = xPos, y = yPos + height},
+		{x = xPos + width, y = yPos + height},
+	}
+	local axis = tile:AddLineList(0x000000, opacity, points)
+	axis:SetZ(zPos + 2)
+	axis:SetClickable(false)
+	axis:SetWidth(2)
+	return axis
+end
+
+--===== SIMPLE BAR =====--
+local simpleBarMethods = {
+	GetTile = function(self)
+		return self.tile
+	end,
+	GetBackground = function(self)
+		return self.background
+	end,
+	GetWidth = function(self)
+		return self.background:GetWidth()
+	end,
+	SetWidth = function(self, width)
+		local newWidth = math.max(0, width)
+		self.background:SetWidth(newWidth)
+		self.main:SetWidth(math.max(0, newWidth - 2)*self.percent)
+	end,
+	GetHeight = function(self)
+		return self.background:GetHeight()
+	end,
+	SetHeight = function(self, height)
+		local newHeight = math.max(0, height)
+		self.background:SetHeight(newHeight)
+		self.main:SetHeight(math.max(0, newHeight - 2))
+	end,
+	Update = function(self, percent)
+		if type(percent) =="number" and percent >= 0 and percent <= 1 then
+			self.percent = percent
+			self.main:SetWidth((self:GetWidth() - 2)*percent)
+			return true
+		end
+		return false
+	end,
+}
+local simpleBarMetatable = makeMetatable(simpleBarMethods)
+
+local function createSimpleBar(tile, xPos, yPos, zPos, width, height, opacity, main, percent)
+	local simpleBar = {
+		tile = tile,
+		percent = 0,
+		background = createBackground(tile, xPos, yPos, zPos, width, height, opacity),
+		main = main,
+	}
+	main:SetZ(zPos + 1)
+	main:SetClickable(false)
+	setmetatable(simpleBar, simpleBarMetatable)
+	if percent then
+		simpleBar:Update(percent)
+	end
+	return simpleBar
+end
+
+function addSimpleBoxBar(tile, xPos, yPos, zPos, width, height, colour, opacity, percent)
+	local subTile = tile:AddSubTile(xPos, yPos, zPos)
+	local main = subTile:AddBox(1, 1, 0, height - 2, colour, opacity)
+	return createSimpleBar(subTile, 0, 0, 0, width, height, opacity/2, main, percent)
+end
+
+function addSimpleGradientBoxBar(tile, xPos, yPos, zPos, width, height, colour1, opacity1, colour2, opacity2, gradient, percent)
+	local subTile = tile:AddSubTile(xPos, yPos, zPos)
+	local main = subTile:AddGradientBox(1, 1, 0, height - 2, colour1, opacity1, colour2, opacity2, gradient)
+	return createSimpleBar(subTile, 0, 0, 0, width, height, (opacity1 + opacity2)/4, main, percent)
+end
+
+function addSimpleFluidBar(tile, xPos, yPos, zPos, width, height, fluid, alpha, percent)
+	local subTile = tile:AddSubTile(xPos, yPos, zPos)
+	local main = subTile:AddFluid(1, 1, 0, height - 2, fluid)
+	main:SetAlpha(alpha)
+	return createSimpleBar(subTile, 0, 0, 0, width, height, alpha/2, main, percent)
+end
+
+--===== COMPLEX BAR =====--
+local complexBarMethods = {
+	GetTile = function(self)
+		return self.tile
+	end,
+	GetBackground = function(self)
+		return self.background
+	end,
+	Update = function(self, percent)
+		if type(percent) =="number" and percent >= 0 and percent <= 1 then
+			local segmentsDrawn = math.ceil(percent*#self.segments)
+			for i, segment in ipairs(self.segments) do
+				segment:SetVisible(i <= segmentsDrawn)
+			end
+			return true
+		end
+		return false
+	end,
+}
+local complexBarMetatable = makeMetatable(complexBarMethods)
+
+function addComplexBar(tile, xPos, yPos, zPos, width, height, colour, opacity, percent)
+	local subTile = tile:AddSubTile(xPos, yPos, zPos)
+	local complexBar = {
+		tile = subTile,
+		background = createBackground(subTile, 0, 0, 0, width, height, opacity/2),
+		segments = {},
+	}
+	
+	local segmentWidth = math.ceil((width - 2)/40)
+	local xStart = 1
+	while xStart < width - 2 do
+		local thisSegmentWidth = segmentWidth
+		if xStart + segmentWidth > width - 1 then
+			thisSegmentWidth = thisSegmentWidth - (xStart + segmentWidth) + (width - 1)
+		end
+		local segment = subTile:AddGradientBox(xStart, 1, thisSegmentWidth, height - 2, colour/3, opacity, colour, opacity, 2)
+		segment:SetZ(1)
+		segment:SetVisible(false)
+		segment:SetClickable(false)
+		table.insert(complexBar.segments, segment)
+		xStart = xStart + segmentWidth
+	end
+	
+	setmetatable(complexBar, complexBarMetatable)
+	if percent then
+		complexBar:Update(percent)
+	end
+	return complexBar
+end
+
+--===== BAR GRAPH =====--
+local barGraphMethods = {
+	GetTile = function(self)
+		return self.tile
+	end,
+	GetBackground = function(self)
+		return self.background
+	end,
+	GetMaxValue = function(self)
+	end,
+	SetMaxValue = function(self, maxValue)
+	end,
+	Update = function(self, value)
+		if type(value) == "number" then
+			table.insert(self.values, value)
+			table.remove(self.values, 1)
+			for i, bar in ipairs(self.bars) do
+				bar:SetHeight(self.height*math.min(1, math.max(0, self.maxValue*self.values[i])))
+			end
+			return true
+		end
+		return false
+	end,
+}
+local barGraphMetatable = makeMetatable(barGraphMethods)
+
+local function createBarGraph(tile, xPos, yPos, zPos, width, height, opacity, bars, maxValue)
+	local barGraph = {
+		tile = tile,
+		values = {},
+		bars = bars,
+		maxValue = maxValue,
+		height = height,
+		background = createBackground(tile, xPos, yPos, zPos, width, height, opacity/4),
+		axis = createAxis(tile, xPos, yPos, zPos, width, height, opacity),
+	}
+	for i = 1, width do
+		barGraph.values[i] = 0
+	end
+	return setmetatable(barGraph, barGraphMetatable)
+end
+
+function addBoxBarGraph(tile, xPos, yPos, zPos, width, height, colour, opacity, maxValue)
+	local subTile = tile:AddSubTile(xPos, yPos, zPos)
+	local bars = {}
+	for x = 1, width do
+		local bar = subTile:AddBox(x - 1, height, 1, 0, colour, opacity)
+		bar:SetZ(1)
+		bar:SetObjectAnchor("LEFT", "BOTTOM")
+		bar:SetClickable(false)
+		table.insert(bars, bar)
+	end
+	return createBarGraph(subTile, 0, 0, 0, width, height, opacity, bars, maxValue)
+end
+
+function addGradientBoxBarGraph(tile, xPos, yPos, zPos, width, height, colour, opacity, maxValue)
+	local subTile = tile:AddSubTile(xPos, yPos, zPos)
+	local bars = {}
+	for x = 1, width do
+		local bar = subTile:AddGradientBox(x - 1, height, 1, 0, colour/3, opacity, colour, opacity, 2)
+		bar:SetZ(1)
+		bar:SetObjectAnchor("LEFT", "BOTTOM")
+		bar:SetClickable(false)
+		table.insert(bars, bar)
+	end
+	return createBarGraph(subTile, 0, 0, 0, width, height, opacity, bars, maxValue)
+end
+
+function addFluidBarGraph(tile, xPos, yPos, zPos, width, height, fluid, alpha, maxValue)
+	local subTile = tile:AddSubTile(xPos, yPos, zPos)
+	local bars = {}
+	for x = 1, width do
+		local bar = subTile:AddFluid(x - 1, height, 1, 0, fluid)
+		bar:SetZ(1)
+		bar:SetObjectAnchor("LEFT", "BOTTOM")
+		bar:SetClickable(false)
+		bar:SetAlpha(alpha)
+		table.insert(bars, bar)
+	end
+	return createBarGraph(subTile, 0, 0, 0, width, height, alpha, bars, maxValue)
+end
+
+--===== LINE GRAPH =====--
+local lineGraphMethods = {
+	GetTile = function(self)
+		return self.tile
+	end,
+	GetBackground = function(self)
+		return self.background
+	end,
+	GetMaxValue = function(self)
+	end,
+	SetMaxValue = function(self, maxValue)
+	end,
+	Update = function(self, value)
+		if type(value) == "number" then
+			table.insert(self.values, value)
+			table.remove(self.values, 1)
+			for i, point in ipairs(self.points) do
+				point.y = -(self.height*math.min(1, math.max(0, self.maxValue*self.values[i])))
+			end
+			self.line:SetPoints(self.points)
+			return true
+		end
+		return false
+	end,
+}
+local lineGraphMetatable = makeMetatable(lineGraphMethods)
+
+local function createLineGraph(tile, xPos, yPos, zPos, width, height, opacity, points, line, maxValue)
+	local lineGraph = {
+		tile = tile,
+		values = {},
+		points = points,
+		line = line,
+		maxValue = maxValue,
+		height = height,
+		background = createBackground(tile, xPos, yPos, zPos, width, height, opacity/4),
+		axis = createAxis(tile, xPos, yPos, zPos, width, height, opacity),
+	}
+	for i = 1, width do
+		lineGraph.values[i] = 0
+	end
+	return setmetatable(lineGraph, lineGraphMetatable)
+end
+
+function addLineGraph(tile, xPos, yPos, zPos, width, height, colour, opacity, maxValue)
+	local subTile = tile:AddSubTile(xPos, yPos, zPos)
+	local pointsTile = subTile:AddSubTile(0, height - 1, 1)
+	local points = {}
+	for x = 1, width do
+		table.insert(points, {x = x, y = 0})
+	end
+	local line = pointsTile:AddLineList(colour, opacity, points)
+	line:SetZ(1)
+	line:SetWidth(2)
+	line:SetClickable(false)
+	return createLineGraph(subTile, 0, 0, 0, width, height, opacity, points, line, maxValue)
+end

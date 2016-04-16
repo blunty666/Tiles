@@ -1,0 +1,641 @@
+local tArgs = {...}
+local bridge
+if type(tArgs[1]) == "string" and peripheral.getType(tArgs[1]) == "openperipheral_bridge" then
+	bridge = peripheral.wrap(tArgs[1])
+	bridge.clear()
+else
+	error("could not find bridge on side: "..tostring(tArgs[1]))
+end
+
+if not os.loadAPI("tiles") then
+	error("Could not load tiles API")
+end
+
+local ALIGNMENT = {
+	HORIZONTAL = {
+		LEFT = true,
+		MIDDLE = true,
+		RIGHT = true,
+	},
+	VERTICAL = {
+		TOP = true,
+		MIDDLE = true,
+		BOTTOM = true,
+	},
+}
+
+local CCC_TO_RGB = {
+	[colours.white] = 0xf0f0f0,
+	[colours.orange] = 0xf2b233,
+	[colours.magenta] = 0xe57fd8,
+	[colours.lightBlue] = 0x99b2f2,
+	[colours.yellow] = 0xdede6c,
+	[colours.lime] = 0x7fcc19,
+	[colours.pink] = 0xf2b2cc,
+	[colours.grey] = 0x4c4c4c,
+	[colours.lightGrey] = 0x999999,
+	[colours.cyan] = 0x4c99b2,
+	[colours.purple] = 0xb266e5,
+	[colours.blue] = 0x3366cc,
+	[colours.brown] = 0x7f664c,
+	[colours.green] = 0x57a64e,
+	[colours.red] = 0xcc4c4c,
+	[colours.black] = 0x000000,
+}
+
+local function actualToRelative(rotation, xPos, yPos)
+	local rot = -math.rad(rotation)
+	return xPos*math.cos(rot) - yPos*math.sin(rot), yPos*math.cos(rot) + xPos*math.sin(rot)
+end
+
+local function resumeThread(threadInfo, eventType, ...)
+	if threadInfo.running then
+		if not threadInfo.filter or eventType == threadInfo.filter or eventType == "terminate" then
+			threadInfo.filter = nil
+
+			--local prevTerm = term.redirect(threadInfo.term)
+			local ok, passback = coroutine.resume(threadInfo.thread, eventType, ...)
+			--term.redirect(prevTerm)
+			
+			if not ok then
+				threadInfo.running = false
+			elseif coroutine.status(threadInfo.thread) == "dead" then
+				threadInfo.running = false
+			else
+				threadInfo.filter = passback
+			end
+		end
+	end
+end
+
+local function createThread(func, terminal)
+	local thread = {
+		running = true,
+		filter = nil,
+		thread = coroutine.create(func),
+		term = terminal,
+	}
+	resumeThread(thread, nil)
+	return thread
+end
+local function newSurfaceManager(playerUUID, surfaceHandler, capture)
+	
+	local backgroundColour, backgroundAlpha = 0xffffff, 0
+	local function decomp(num)
+		return math.floor(num/(2^16)), math.floor((num % 2^16)/(2^8)), num % 2^8
+	end
+	local function recomb(num1, num2, num3)
+		return num1*(2^16) + num2*(2^8) + num3
+	end
+	local function setBackgroundColour(index, delta, value)
+		local rgb = {decomp(backgroundColour)}
+		rgb[index] = math.max(0, math.min(255, value or (rgb[index] + delta)))
+		backgroundColour = recomb(unpack(rgb))
+		capture.setBackground(backgroundColour, backgroundAlpha)
+	end
+	
+	local backgroundEditorTile = surfaceHandler:AddTile(-100, -100, 10, "bgEditor")
+	backgroundEditorTile:SetScreenAnchor("RIGHT", "BOTTOM")
+	
+	backgroundEditorTile:SetRotation(45)
+	
+	local dragBox = backgroundEditorTile:AddBox(-10, -10, 10, 10, 0x000000, 1)
+	local dragX, dragY
+	local function dragBoxOnRelease(button, xPos, yPos)
+		dragX, dragY = false, false
+	end
+	dragBox:SetOnRelease(dragBoxOnRelease)
+	local function dragBoxOnDrag(button, xPos, yPos, deltaX, deltaY)
+		if button == 0 then
+			backgroundEditorTile:SetX(backgroundEditorTile:GetX() + deltaX)
+			backgroundEditorTile:SetY(backgroundEditorTile:GetY() + deltaY)
+		elseif button == 1 then
+			if dragX and dragY then
+				local prevRot = math.deg(math.atan2(dragY, dragX))
+				dragX, dragY = dragX + deltaX, dragY + deltaY
+				local currRot = math.deg(math.atan2(dragY, dragX))
+				backgroundEditorTile:SetRotation((backgroundEditorTile:GetRotation() + currRot - prevRot) % 360)
+			else
+				dragX, dragY = deltaX, deltaY
+			end
+		end
+	end
+	dragBox:SetOnDrag(dragBoxOnDrag)
+	local function dragBoxOnScroll(xPos, yPos, dir)
+		backgroundEditorTile:SetRotation(backgroundEditorTile:GetRotation() + dir/math.abs(dir))
+	end
+	dragBox:SetOnScroll(dragBoxOnScroll)
+	
+	local alphaTile = backgroundEditorTile:AddSubTile(0, 0, 0, "alpha")
+	local alphaRunner = alphaTile:AddLine({x = 10, y = 0}, {x = 10, y = 50}, 0x000000, 1)
+	alphaRunner:SetZ(1)
+	alphaRunner:SetWidth(4)
+	alphaRunner:SetClickable(false)
+	local alphaSlider = alphaTile:AddBox(10, 47, 14, 4, 0x000000, 1, "slider")
+	alphaSlider:SetObjectAnchor("MIDDLE", "MIDDLE")
+	alphaSlider:SetZ(2)
+	alphaSlider:SetClickable(false)
+	local alphaText = alphaTile:AddText(2, 48, "Alpha", 0xff0000)
+	alphaText:SetScale(0.8)
+	alphaText:SetZ(3)
+	alphaText:SetRotation(270)
+	alphaText:SetClickable(false)
+	local alphaBG = alphaTile:AddBox(0, 0, 20, 50, backgroundColour, 1)
+	local function scrollAlpha(xPos, yPos, dir)
+		local sliderY = alphaSlider:GetY()
+		sliderY = math.max(3, math.min(47, sliderY - dir/math.abs(dir)))
+		alphaSlider:SetY(sliderY)
+		backgroundAlpha = 223*(1-(sliderY - 3)/44)
+		capture.setBackground(backgroundColour, backgroundAlpha)
+	end
+	local function clickAlpha(button, xPos, yPos)
+		alphaBG:SetUserdata(yPos)
+		local sliderY = math.max(3, math.min(47, yPos))
+		alphaSlider:SetY(sliderY)
+		backgroundAlpha = 223*(1-((sliderY - 3)/44))
+		capture.setBackground(backgroundColour, backgroundAlpha)
+	end
+	local function dragAlpha(button, xPos, yPos, deltaX, deltaY)
+		local relX, relY = actualToRelative(alphaBG:GetActualRotation(), deltaX, deltaY)
+		local clickY = alphaBG:GetUserdata() + relY
+		alphaBG:SetUserdata(clickY)
+		local sliderY = math.max(3, math.min(47, clickY))
+		alphaSlider:SetY(sliderY)
+		backgroundAlpha = 223*(1-((sliderY - 3)/44))
+		capture.setBackground(backgroundColour, backgroundAlpha)
+	end
+	alphaBG:SetOnScroll(scrollAlpha)
+	alphaBG:SetOnClick(clickAlpha)
+	alphaBG:SetOnDrag(dragAlpha)
+	
+	local redTile = backgroundEditorTile:AddSubTile(20, 0, 0, "red")
+	local redRunner = redTile:AddLine({x = 10, y = 0}, {x = 10, y = 50}, 0x000000, 1)
+	redRunner:SetZ(1)
+	redRunner:SetWidth(4)
+	redRunner:SetClickable(false)
+	local redSlider = redTile:AddBox(10, 3, 14, 4, 0x000000, 1, "RED_SLIDER")
+	redSlider:SetObjectAnchor("MIDDLE", "MIDDLE")
+	redSlider:SetZ(2)
+	redSlider:SetClickable(false)
+	local redText = redTile:AddText(2, 48, "Red", 0xffffff)
+	redText:SetScale(0.8)
+	redText:SetZ(3)
+	redText:SetRotation(270)
+	redText:SetClickable(false)
+	local redBG = redTile:AddBox(0, 0, 20, 50, 0xff0000, 1)
+	local function scrollRed(xPos, yPos, dir)
+		local sliderY = math.max(3, math.min(47, redSlider:GetY() - dir/math.abs(dir)))
+		redSlider:SetY(sliderY)
+		setBackgroundColour(1, nil, math.floor(255*(1-((sliderY - 3)/44))))
+	end
+	local function clickRed(button, xPos, yPos, deltaX, deltaY)
+		redBG:SetUserdata(yPos)
+		local sliderY = math.max(3, math.min(47, yPos))
+		redSlider:SetY(sliderY)
+		setBackgroundColour(1, nil, math.floor(255*(1-((sliderY - 3)/44))))
+	end
+	local function dragRed(button, xPos, yPos, deltaX, deltaY)
+		local relX, relY = actualToRelative(redBG:GetActualRotation(), deltaX, deltaY)
+		local clickY = redBG:GetUserdata() + relY
+		redBG:SetUserdata(clickY)
+		local sliderY = math.max(3, math.min(47, clickY))
+		redSlider:SetY(sliderY)
+		setBackgroundColour(1, nil, math.floor(255*(1-((sliderY - 3)/44))))
+	end
+	redBG:SetOnScroll(scrollRed)
+	redBG:SetOnClick(clickRed)
+	redBG:SetOnDrag(dragRed)
+	
+	local greenTile = backgroundEditorTile:AddSubTile(40, 0, 0, "green")
+	local greenRunner = greenTile:AddLine({x = 10, y = 0}, {x = 10, y = 50}, 0x000000, 1)
+	greenRunner:SetZ(1)
+	greenRunner:SetWidth(4)
+	greenRunner:SetClickable(false)
+	local greenSlider = greenTile:AddBox(10, 3, 14, 4, 0x000000, 1, "GREEN_SLIDER")
+	greenSlider:SetObjectAnchor("MIDDLE", "MIDDLE")
+	greenSlider:SetZ(2)
+	greenSlider:SetClickable(false)
+	local greenText = greenTile:AddText(2, 48, "Green", 0xffffff)
+	greenText:SetScale(0.8)
+	greenText:SetZ(3)
+	greenText:SetRotation(270)
+	greenText:SetClickable(false)
+	local greenBG = greenTile:AddBox(0, 0, 20, 50, 0x00ff00, 1)
+	local function scrollGreen(xPos, yPos, dir)
+		local sliderY = math.max(3, math.min(47, greenSlider:GetY() - dir/math.abs(dir)))
+		greenSlider:SetY(sliderY)
+		setBackgroundColour(2, nil, math.floor(255*(1-((sliderY - 3)/44))))
+	end
+	local function clickGreen(button, xPos, yPos, deltaX, deltaY)
+		greenBG:SetUserdata(yPos)
+		local sliderY = math.max(3, math.min(47, yPos))
+		greenSlider:SetY(sliderY)
+		setBackgroundColour(2, nil, math.floor(255*(1-((sliderY - 3)/44))))
+	end
+	local function dragGreen(button, xPos, yPos, deltaX, deltaY)
+		local relX, relY = actualToRelative(greenBG:GetActualRotation(), deltaX, deltaY)
+		local clickY = greenBG:GetUserdata() + relY
+		greenBG:SetUserdata(clickY)
+		local sliderY = math.max(3, math.min(47, clickY))
+		greenSlider:SetY(sliderY)
+		setBackgroundColour(2, nil, math.floor(255*(1-((sliderY - 3)/44))))
+	end
+	greenBG:SetOnScroll(scrollGreen)
+	greenBG:SetOnClick(clickGreen)
+	greenBG:SetOnDrag(dragGreen)
+	
+	local blueTile = backgroundEditorTile:AddSubTile(60, 0, 0, "blue")
+	local blueRunner = blueTile:AddLine({x = 10, y = 0}, {x = 10, y = 50}, 0x000000, 1)
+	blueRunner:SetZ(1)
+	blueRunner:SetWidth(4)
+	blueRunner:SetClickable(false)
+	local blueSlider = blueTile:AddBox(10, 3, 14, 4, 0x000000, 1, "BLUE_SLIDER")
+	blueSlider:SetObjectAnchor("MIDDLE", "MIDDLE")
+	blueSlider:SetZ(2)
+	blueSlider:SetClickable(false)
+	local blueText = blueTile:AddText(2, 48, "Blue", 0xffffff)
+	blueText:SetScale(0.8)
+	blueText:SetZ(3)
+	blueText:SetRotation(270)
+	blueText:SetClickable(false)
+	local blueBG = blueTile:AddBox(0, 0, 20, 50, 0x0000ff, 1)
+	local function scrollblue(xPos, yPos, dir)
+		local sliderY = math.max(3, math.min(47, blueSlider:GetY() - dir/math.abs(dir)))
+		blueSlider:SetY(sliderY)
+		setBackgroundColour(3, nil, math.floor(255*(1-((sliderY - 3)/44))))
+	end
+	local function clickblue(button, xPos, yPos, deltaX, deltaY)
+		blueBG:SetUserdata(yPos)
+		local sliderY = math.max(3, math.min(47, yPos))
+		blueSlider:SetY(sliderY)
+		setBackgroundColour(3, nil, math.floor(255*(1-((sliderY - 3)/44))))
+	end
+	local function dragBlue(button, xPos, yPos, deltaX, deltaY)
+		local relX, relY = actualToRelative(blueBG:GetActualRotation(), deltaX, deltaY)
+		local clickY = blueBG:GetUserdata() + relY
+		blueBG:SetUserdata(clickY)
+		local sliderY = math.max(3, math.min(47, clickY))
+		blueSlider:SetY(sliderY)
+		setBackgroundColour(3, nil, math.floor(255*(1-((sliderY - 3)/44))))
+	end
+	blueBG:SetOnScroll(scrollblue)
+	blueBG:SetOnClick(clickblue)
+	blueBG:SetOnDrag(dragBlue)
+	
+	local lineGraphTile = surfaceHandler:AddTile(0, 0, 20, "lineGraph")
+	lineGraphTile:SetScreenAnchor("MIDDLE", "MIDDLE")
+	local lineGraphBG = lineGraphTile:AddBox(0, 0, 100, 100, 0xffffff, 0.5)
+	lineGraphBG:SetObjectAnchor("MIDDLE", "MIDDLE")
+	local boxPoints = {
+		{x = -45, y = -45},
+		{x = -45, y = 45},
+		{x = 45, y = 45},
+		{x = 45, y = -45},
+		{x = -45, y = -45},
+	}
+	local border = lineGraphTile:AddLineList(0x000000, 1, boxPoints)
+	border:SetClickable(false)
+	
+	local deltas = {-2, -1, 1, 2}
+	local points, pointDeltas = {}, {}
+	local numPoints = 10
+	for i = 1, numPoints do
+		points[i] = {x = math.random(-45, 45), y = math.random(-45, 45)}
+		pointDeltas[i] = {x = deltas[math.random(1, 4)], y = deltas[math.random(1, 4)]}
+	end
+	local lineGraph = lineGraphTile:AddLineList(0x000000, 1, points)
+	lineGraph:SetClickable(false)
+	
+	local function graphTileOnDrag(button, xPos, yPos, deltaX, deltaY)
+		lineGraphTile:SetX(math.min(100, math.max(-100, lineGraphTile:GetX() + deltaX)))
+		lineGraphTile:SetY(math.min(100, math.max(-100, lineGraphTile:GetY() + deltaY)))
+	end
+	lineGraphBG:SetOnDrag(graphTileOnDrag)
+	
+	local function mainFunc()
+		while true do
+			sleep(0.05)
+			local currPoints = lineGraph:GetPoints()
+			local newPoints = {}
+			for index, point in ipairs(currPoints) do
+				local currX = point.x
+				local newX = point.x + pointDeltas[index].x
+				if math.abs(newX) > 45 then
+					newX = math.max(-45, math.min(45, newX))
+					pointDeltas[index].x = -pointDeltas[index].x
+				end
+				local currY = point.y
+				local newY = point.y + pointDeltas[index].y
+				if math.abs(newY) > 45 then
+					newY = math.max(-45, math.min(45, newY))
+					pointDeltas[index].y = -pointDeltas[index].y
+				end
+				newPoints[index] = {x = newX, y = newY}
+			end
+			lineGraph:SetPoints(newPoints)
+		end
+	end
+	
+	local function keyFunc()
+		while true do
+			local event = {os.pullEvent()}
+			if event[1] == "glasses_key_down" then
+				local key = event[5]
+				if key == keys.a then
+					lineGraphTile:SetX(math.max(-100, lineGraphTile:GetX() - 5))
+				elseif key == keys.d then
+					lineGraphTile:SetX(math.min(100, lineGraphTile:GetX() + 5))
+				elseif key == keys.w then
+					lineGraphTile:SetY(math.max(-100, lineGraphTile:GetY() - 5))
+				elseif key == keys.s then
+					lineGraphTile:SetY(math.min(100, lineGraphTile:GetY() + 5))
+				elseif key == keys.q then
+					lineGraphTile:SetRotation((lineGraphTile:GetRotation() - 5) % 360)
+				elseif key == keys.e then
+					lineGraphTile:SetRotation((lineGraphTile:GetRotation() + 5) % 360)
+				elseif key == keys.space then
+					alphaTile:SetDrawn(not alphaTile:GetDrawn())
+				elseif key == keys.enter then
+					backgroundEditorTile:SetDrawn(not backgroundEditorTile:GetDrawn())
+				end
+			end
+		end
+	end
+	local keyThread = createThread(keyFunc)
+
+	for _, tile in pairs(surfaceHandler:GetAllMasterTiles()) do
+		if tile:GetDrawn() then
+			tile:SetDrawn(false)
+		end
+		tile:SetDrawn(true)
+	end
+	
+	return coroutine.create(
+		function()
+		
+			local function findObject(drawableID)
+				local drawable = surfaceHandler:GetSurface().getObjectById(drawableID)
+				if drawable then
+					objectID = drawable.getUserdata()
+					if objectID then
+						return surfaceHandler:GetObject(objectID)
+					end
+				end
+			end
+		
+			local guiElements = {}
+			for i = 2, 13 do
+				guiElements[i] = false
+			end
+			local lastClickID, lastClickX, lastClickY, lastClickButton = false, false, false, false
+			
+			local eventHandlers = {
+				glasses_attach = function(event)
+					for _, tile in pairs(surfaceHandler:GetAllMasterTiles()) do
+						if tile:GetDrawn() then
+							tile:SetDrawn(false)
+						end
+						tile:SetDrawn(true)
+					end
+				end,
+				glasses_detach = function(event)
+					for _, tile in pairs(surfaceHandler:GetAllMasterTiles()) do
+						tile:SetDrawn(false)
+					end
+				end,
+				glasses_capture = function(event)
+					capture.setBackground(backgroundColour, backgroundAlpha)
+					capture.toggleGuiElements(guiElements)
+					capture.setKeyRepeat(true)
+				end,
+				glasses_release = function(event)
+				end,
+				glasses_chat_command = function(event)
+				end,
+				glasses_chat_message = function(event)
+				end,
+				glasses_key_down = function(event)
+					resumeThread(keyThread, unpack(event))
+				end,
+				glasses_key_up = function(event)
+				end,
+				glasses_mouse_scroll = function(event)
+				end,
+				glasses_mouse_down = function(event)
+					lastClickID, lastClickX, lastClickY, lastClickButton = false, false, false, false
+				end,
+				glasses_mouse_up = function(event)
+					if lastClickID then
+						local object = findObject(lastClickID)
+						if object then
+							local func = object:GetOnRelease()
+							if func then
+								func(lastClickButton, lastClickX, lastClickY)
+							end
+						end
+						lastClickID, lastClickX, lastClickY, lastClickButton = false, false, false, false
+					end
+				end,
+				glasses_mouse_drag = function(event)
+					if lastClickID then
+						lastClickX, lastClickY = lastClickX + event[5], lastClickY + event[6]
+						local object = findObject(lastClickID)
+						if object then
+							local func = object:GetOnDrag()
+							if func then
+								func(lastClickButton, lastClickX, lastClickY, event[5], event[6])
+							end
+						end
+					end
+				end,
+				glasses_component_mouse_wheel = function(event)
+					local object = findObject(event[5])
+					if object then
+						local func = object:GetOnScroll()
+						if func then
+							func(event[7], event[8], event[9])
+						end
+					end
+				end,
+				glasses_component_mouse_down = function(event)
+					if lastClickID then
+						local object = findObject(lastClickID)
+						if object then
+							local func = object:GetOnRelease()
+							if func then
+								func(lastClickX, lastClickY, lastClickButton)
+							end
+						end
+					end
+					local object = findObject(event[5])
+					if object then
+						lastClickID, lastClickX, lastClickY, lastClickButton = event[5], event[7], event[8], event[9]
+						local func = object:GetOnClick()
+						if func then
+							func(lastClickButton, lastClickX, lastClickY)
+						end
+					else
+						lastClickID, lastClickX, lastClickY, lastClickButton = false, false, false, false
+					end
+				end,
+				glasses_component_mouse_up = function(event)
+					if lastClickID then
+						local object = findObject(lastClickID)
+						if object then
+							local func = object:GetOnRelease()
+							if func then
+								if lastClickID == event[5] then
+									func(event[9], event[7], event[8])
+								else
+									func(lastClickButton, lastClickX, lastClickY)
+								end
+							end
+						end
+						lastClickID, lastClickX, lastClickY, lastClickButton = false, false, false, false
+					end
+				end,
+				glasses_component_mouse_drag = function(event)
+					if lastClickID == event[5] then
+						local object = findObject(lastClickID)
+						if object then
+							local func = object:GetOnDrag()
+							if func then
+								if lastClickID == event[5] then
+									func(event[9], event[7], event[8])
+								end
+							end
+						end
+						lastClickX, lastClickY, lastClickButton = event[7], event[8], event[9]
+					end
+				end,
+			}
+			local mainThread = createThread(mainFunc)
+			local event = {}
+			local handler
+			while true do
+				handler = eventHandlers[ event[1] ]
+				if handler then
+					handler(event)
+				else
+					resumeThread(mainThread, unpack(event))
+					resumeThread(keyThread, unpack(event))
+				end
+				event = coroutine.yield()
+			end
+		end
+	)
+end
+
+local function setupPlayer(playerUUID)
+	local playerSurface = bridge.getSurfaceByUUID(playerUUID)
+	playerSurface.clear()
+
+	local player = {
+		surfaceHandler = tiles.newSurfaceHandler(playerSurface),
+		capture = bridge.getCaptureControl(playerUUID),
+	}
+	player.capture.stopCapturing()
+	
+	player.thread = newSurfaceManager(playerUUID, player.surfaceHandler, player.capture)
+
+	return player
+end
+
+local players = {}
+local mainTerminalEvents = {
+	char = true,
+	key = true,
+	key_up = true,
+	mouse_click = true,
+	mouse_drag = true,
+	mouse_scroll = true,
+	mouse_up = true,
+	paste = true,
+	term_resize = true,
+	terminate = true,
+}
+local glassesEvents = {
+	glasses_attach = true,
+	glasses_detach = true,
+	glasses_capture = true,
+	glasses_release = true,
+	glasses_chat_command = true,
+	glasses_chat_message = true,
+	glasses_key_down = true,
+	glasses_key_up = true,
+	glasses_mouse_scroll = true,
+	glasses_mouse_down = true,
+	glasses_mouse_up = true,
+	glasses_component_mouse_wheel = true,
+	glasses_component_mouse_down = true,
+	glasses_component_mouse_up = true,
+	glasses_component_mouse_drag = true,
+}
+local function main()
+	local event, eventType
+	local playerUUID, player
+	local exit = false
+	while not exit do
+		event = {coroutine.yield()}
+		eventType = event[1]
+		if glassesEvents[eventType] then
+			playerUUID = event[4]
+			player = players[playerUUID]
+			if not player then
+				players[playerUUID] = setupPlayer(playerUUID)
+			else
+				if eventType == "glasses_attach" then
+					local playerSurface = bridge.getSurfaceByUUID(playerUUID)
+					player.surfaceHandler:SetSurface(playerSurface)
+				end
+				local ok, passback = coroutine.resume(player.thread, event)
+				if not ok then
+					printError(passback)
+				end
+			end
+		elseif not mainTerminalEvents[eventType] then
+			for _, player in pairs(players) do
+				local ok, passback = coroutine.resume(player.thread, event)
+				if not ok then
+					printError(passback)
+				end
+			end
+		elseif eventType == "key" and event[2] == keys.backspace then
+			--clean up maybe
+			exit = true
+		end			
+	end
+end
+
+local coroutine_yield = coroutine.yield
+
+local function render()
+	local hasChanged = true
+	while true do
+		if hasChanged then
+			hasChanged = false
+			bridge.sync()
+		end
+		coroutine_yield()
+		for _, player in pairs(players) do
+			if player.surfaceHandler:GetChanged() then
+				hasChanged = true
+				player.surfaceHandler:ResetChanged()
+			end
+		end
+	end
+end
+
+for _, playerData in ipairs(bridge.getUsers()) do
+	players[playerData.uuid] = setupPlayer(playerData.uuid)
+end
+
+parallel.waitForAny(main, render)
+
+--clean up
+for playerUUID, player in pairs(players) do
+	player.capture.stopCapturing()
+	local playerSurface = bridge.getSurfaceByUUID(playerUUID)
+	playerSurface.clear()
+end
+bridge.sync()
