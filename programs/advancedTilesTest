@@ -36,7 +36,7 @@ local function newPlayerHandler(playerUUID, surfaceHandler)
 
 		local bars
 		do -- window1
-			local window1 = guiTiles.newBasicWindow(surfaceHandler:AddTile(-120, 10, 10), 110, 115)
+			local window1 = guiTiles.newBasicWindow(surfaceHandler:AddTile(-120, 10, 1), 110, 115)
 			local text = window1:AddFancyText(5, 4, 1, "Bars Window", 0x000000, 1)
 			local button = window1:AddButton(73, 3, 1, "TEST", 0xff0000, 0xffffff, 0x00ff00, 0x000000)
 			button:SetOnClick( function() text:SetText(math.random()) end )
@@ -57,7 +57,7 @@ local function newPlayerHandler(playerUUID, surfaceHandler)
 
 		local graphs
 		do -- window2
-			local window2 = guiTiles.newBasicWindow(surfaceHandler:AddTile(-245, -195, 0), 235, 185)
+			local window2 = guiTiles.newBasicWindow(surfaceHandler:AddTile(-245, -195, 10), 235, 185)
 			window2:AddFancyText(5, 4, 1, "Graph Window", 0x000000, 1)
 			local slider = window2:AddSlider(220, 180, 1, 175, 10)
 			slider:SetRotation(270)
@@ -77,7 +77,7 @@ local function newPlayerHandler(playerUUID, surfaceHandler)
 		end
 
 		do -- window3
-			local window3 = guiTiles.newBasicWindow(surfaceHandler:AddTile(10, -290, 20), 150, 280)
+			local window3 = guiTiles.newBasicWindow(surfaceHandler:AddTile(10, -290, 30), 150, 280)
 			
 			local list, textBox
 			
@@ -90,7 +90,10 @@ local function newPlayerHandler(playerUUID, surfaceHandler)
 			
 			local function addItem(button)
 				if button == 0 then
-					list:AddItem(list:GetSelected() + 1, textBox:GetText())
+					local selected = list:GetSelected()
+					if selected then
+						list:AddItem(selected + 1, textBox:GetText())
+					end
 				end
 			end
 			local addItemButton = window3:AddButton(10, 230, 1, "Add", 0xff0000, 0xffffff, 0x00ff00, 0x000000)
@@ -98,22 +101,31 @@ local function newPlayerHandler(playerUUID, surfaceHandler)
 			
 			local function updateItem(button)
 				if button == 0 then
-					list:SetItem(list:GetSelected(), textBox:GetText())
+					local selected = list:GetSelected()
+					if selected then
+						list:SetItem(selected, textBox:GetText())
+					end
 				end
 			end
-			local updateItemButton = window3:AddButton(40, 230, 1, "Update", 0xff0000, 0xffffff, 0x00ff00, 0x000000)
+			local updateItemButton = window3:AddButton(75 - math.ceil((tiles.getStringWidth("Update") + 2)/2), 230, 1, "Update", 0xff0000, 0xffffff, 0x00ff00, 0x000000)
 			updateItemButton:SetOnRelease(updateItem)
 			
 			local function removeItem(button)
 				if button == 0 then
-					list:RemoveItem(list:GetSelected())
+					local selected = list:GetSelected()
+					if selected then
+						list:RemoveItem(selected)
+					end
 				end
 			end
-			local removeItemButton = window3:AddButton(100, 230, 1, "Remove", 0xff0000, 0xffffff, 0x00ff00, 0x000000)
+			local removeItemButton = window3:AddButton(140 - tiles.getStringWidth("Remove") - 2, 230, 1, "Remove", 0xff0000, 0xffffff, 0x00ff00, 0x000000)
 			removeItemButton:SetOnRelease(removeItem)
 			
 			local function textEnterFunc(text)
-				list:SetItem(list:GetSelected(), text)
+				local selected = list:GetSelected()
+				if selected then
+					list:SetItem(selected, text)
+				end
 			end
 			textBox = window3:AddTextBox(10, 250, 1, 130, textEnterFunc)
 			
@@ -132,7 +144,7 @@ local function newPlayerHandler(playerUUID, surfaceHandler)
 					textBox:SetMask(currMask)
 				end
 			end
-			local toggleMaskButton = window3:AddButton(100, 260, 1, "MASK", 0xff0000, 0xffffff, 0x00ff00, 0x000000)
+			local toggleMaskButton = window3:AddButton(140 - tiles.getStringWidth("Mask") - 2, 260, 1, "Mask", 0xff0000, 0xffffff, 0x00ff00, 0x000000)
 			toggleMaskButton:SetOnRelease(toggleMask)
 			
 			window3:SetScreenAnchor("LEFT", "BOTTOM")
@@ -153,7 +165,7 @@ local function newPlayerHandler(playerUUID, surfaceHandler)
 				guiHandler:SetCaptureBackground(recomb(unpack(rgb)))
 			end
 			
-			local window4 = guiTiles.newBasicWindow(surfaceHandler:AddTile(10, 10, 25), 70, 100)
+			local window4 = guiTiles.newBasicWindow(surfaceHandler:AddTile(10, 10, 40), 70, 100)
 			local alphaSlider = window4:AddSlider(10, 10, 0, 50, 20)
 			alphaSlider:SetOnChanged(function(percent) guiHandler:SetCaptureAlpha(223*percent) end)
 			alphaSlider:SetPercent(0)
@@ -164,10 +176,63 @@ local function newPlayerHandler(playerUUID, surfaceHandler)
 			window4:AddFancyText(11, 31, 5, "Red", 0xff0000, 1)
 			window4:AddFancyText(11, 51, 5, "Green", 0x00ff00, 1)
 			window4:AddFancyText(11, 71, 5, "Blue", 0x0000ff, 1)
+
 			makeDraggable(window4, window4:GetBackground())
 			window4:SetDrawn(true)
 		end
 		
+		local updateLineGraph
+		do -- window5
+			local window5 = guiTiles.newBasicWindow(surfaceHandler:AddTile(-50, -50, 50), 100, 100)
+
+			local boxPoints = {
+				{x = 5, y = 5},
+				{x = 5, y = 95},
+				{x = 95, y = 95},
+				{x = 95, y = 5},
+				{x = 5, y = 5},
+			}
+			local border = window5:AddLineList(0x000000, 1, boxPoints)
+			border:SetClickable(false)
+			border:SetZ(1)
+
+			local deltas = {-2, -1, 1, 2}
+			local points, pointDeltas = {}, {}
+			local numPoints = 10
+			for i = 1, numPoints do
+				points[i] = {x = math.random(5, 95), y = math.random(5, 95)}
+				pointDeltas[i] = {x = deltas[math.random(1, 4)], y = deltas[math.random(1, 4)]}
+			end
+			local lineGraph = window5:AddLineList(0x000000, 1, points)
+			lineGraph:SetClickable(false)
+			lineGraph:SetZ(1)
+			
+			updateLineGraph = function()
+				local currPoints = lineGraph:GetPoints()
+				local newPoints = {}
+				for index, point in ipairs(currPoints) do
+					local currX = point.x
+					local newX = point.x + pointDeltas[index].x
+					if math.abs(newX - 50) > 45 then
+						newX = math.max(5, math.min(95, newX))
+						pointDeltas[index].x = -pointDeltas[index].x
+					end
+					local currY = point.y
+					local newY = point.y + pointDeltas[index].y
+					if math.abs(newY - 50) > 45 then
+						newY = math.max(5, math.min(95, newY))
+						pointDeltas[index].y = -pointDeltas[index].y
+					end
+					newPoints[index] = {x = newX, y = newY}
+				end
+				lineGraph:SetPoints(newPoints)
+			end
+
+			window5:SetScreenAnchor("MIDDLE", "MIDDLE")
+			makeDraggable(window5, window5:GetBackground())
+			window5:SetDrawn(true)
+		end
+
 		do -- main
 			local i = 0
 			local function update()
@@ -184,17 +249,22 @@ local function newPlayerHandler(playerUUID, surfaceHandler)
 			end
 			print("Graphs generated in ", os.clock() - time, " seconds")
 
-			local timer = os.startTimer(1)
+			local timer1, timer2 = os.startTimer(1), os.startTimer(0.05)
 			while true do
 				local event = {os.pullEvent()}
 				guiHandler:HandleEvent(event)
-				if event[1] == "timer" and event[2] == timer then
-					local percent = math.random()
-					for _, bar in ipairs(bars) do
-						bar:Update(percent)
+				if event[1] == "timer" then
+					if event[2] == timer1 then
+						local percent = math.random()
+						for _, bar in ipairs(bars) do
+							bar:Update(percent)
+						end
+						update()
+						timer1 = os.startTimer(1)
+					elseif event[2] == timer2 then
+						updateLineGraph()
+						timer2 = os.startTimer(0.05)
 					end
-					update()
-					timer = os.startTimer(1)
 				end
 			end
 		end
