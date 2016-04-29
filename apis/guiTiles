@@ -936,6 +936,12 @@ do
 			self.background:SetHeight(self.height)
 			self.border:SetPoints({{x = 0, y = 0}, {x = self.width, y = 0}, {x = self.width, y = self.height}, {x = 0, y = self.height}, {x = 0, y = 0}})
 		end,
+		GetColor = function(self)
+			return self.background:GetColor()
+		end,
+		SetColor = function(self, color)
+			return self.background:SetColor(color)
+		end,
 	}
 	local basicWindowMetatable = makeMetatable(basicWindowMethods)
 
@@ -944,7 +950,7 @@ do
 			tile = tile,
 			width = width,
 			height = height,
-			background = tile:AddBox(0, 0, width, height, 0xffffff, 0.5),
+			background = tile:AddBox(0, 0, width, height, 0xffffff, 1),
 			border = tile:AddLineList(0x000000, 1, {{x = 0, y = 0}, {x = width, y = 0}, {x = width, y = height}, {x = 0, y = height}, {x = 0, y = 0}})
 		}
 		basicWindow.border:SetZ(1)

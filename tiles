@@ -134,7 +134,7 @@ local _checkProperty = {
 		return value == nil or (type(value) == "table" and type(value.listSources) == "function" and value.listSources().glasses_capture)
 	end,
 	bridge = function(value)
-		return true
+		return value == nil or (type(value) == "table" and type(value.listSources) == "function" and value.listSources().openperipheral_bridge)
 	end,
 	functionOrNil = function(value)
 		return value == nil or type(value) == "function"
@@ -1926,4 +1926,192 @@ function newSurfaceHandler(surface, capture)
 	}
 	setmetatable(surfaceHandler, surfaceHandlerMetatable)
 	return surfaceHandler
+end
+
+--===== MULTI SURFACE HANDLER =====--
+local mainTerminalEvents = {
+	char = true,
+	key = true,
+	key_up = true,
+	mouse_click = true,
+	mouse_drag = true,
+	mouse_scroll = true,
+	mouse_up = true,
+	paste = true,
+	term_resize = true,
+	terminate = true,
+}
+local glassesEvents = {
+	glasses_attach = true,
+	glasses_detach = true,
+	glasses_capture = true,
+	glasses_release = true,
+	glasses_chat_command = true,
+	glasses_chat_message = true,
+	glasses_key_down = true,
+	glasses_key_up = true,
+	glasses_mouse_scroll = true,
+	glasses_mouse_down = true,
+	glasses_mouse_up = true,
+	glasses_mouse_drag = true,
+	glasses_component_mouse_wheel = true,
+	glasses_component_mouse_down = true,
+	glasses_component_mouse_up = true,
+
+	glasses_custom_event = true,
+}
+
+local function setupPlayer(multiSurfaceHandler, playerUUID)
+	local playerSurface = multiSurfaceHandler.bridge.getSurfaceByUUID(playerUUID)
+	playerSurface.clear()
+	
+	local playerCapture = multiSurfaceHandler.bridge.getCaptureControl(playerUUID)
+	playerCapture.stopCapturing()
+	
+	local surfaceHandler = newSurfaceHandler(playerSurface, playerCapture)
+	
+	local thread = coroutine.create(multiSurfaceHandler.newPlayerHandler(playerUUID, surfaceHandler))
+	
+	local ok, passback = coroutine.resume(thread)
+	if not ok then
+		printError(passback)
+	else
+		return {
+			surfaceHandler = surfaceHandler,
+			thread = thread,
+		}
+	end
+end
+
+local multiSurfaceHandlerMethods = {
+	GetConnectedPlayers = function(self)
+	end,
+	Run = function(self)
+		local function main()
+			local event, eventType
+			local playerUUID, player
+			local exit = false
+			
+			while not exit do
+				event = {coroutine.yield()}
+				eventType = event[1]
+				if glassesEvents[eventType] then
+					playerUUID = event[4]
+					player = self.players[playerUUID]
+					if not player then
+						self.players[playerUUID] = setupPlayer(self, playerUUID)
+					else
+						if eventType == "glasses_attach" then
+							local playerSurface = self.bridge.getSurfaceByUUID(playerUUID)
+							local playerCapture = self.bridge.getCaptureControl(playerUUID)
+							player.surfaceHandler:SetSurface(playerSurface, playerCapture)
+						elseif eventType == "glasses_detach" then
+							player.surfaceHandler:SetCapture(nil)
+						end
+						if coroutine.status(player.thread) ~= "dead" then
+							local ok, passback = coroutine.resume(player.thread, unpack(event))
+							if not ok then
+								printError(passback)
+							end
+						end
+					end
+				elseif not mainTerminalEvents[eventType] then
+					for _, player in pairs(self.players) do
+						if coroutine.status(player.thread) ~= "dead" then
+							local ok, passback = coroutine.resume(player.thread, unpack(event))
+							if not ok then
+								printError(passback)
+							end
+						end
+					end
+				elseif eventType == "key" then
+					if event[2] == keys.backspace then
+						exit = true
+					end
+				elseif eventType == "terminate" then
+					exit = true
+				end			
+			end
+		end
+
+		local function renderLoopManager()
+
+			local coroutine_resume = coroutine.resume
+			local coroutine_create = coroutine.create
+			local bridge_sync = self.bridge.sync
+			local os_clock = os.clock
+			local coroutine_yield = coroutine.yield
+
+			local shouldSync = false
+			local syncStartTime = false
+			local function mainRenderLoop()
+				while true do
+					while true do
+						for _, player in pairs(self.players) do
+							shouldSync = player.surfaceHandler:ResetChanged() or shouldSync
+						end
+						if shouldSync then
+							shouldSync = false
+							syncStartTime = os_clock()
+							bridge_sync()
+							syncStartTime = false
+						else
+							break
+						end
+					end
+					coroutine_yield()
+				end
+			end
+
+			local MAX_RENDER_INTERVAL = 0.5
+			local currentRenderThread = coroutine_create(mainRenderLoop)
+
+			local ok, filter
+			while true do
+				ok, filter = coroutine_resume(currentRenderThread, coroutine_yield(filter))
+				if not ok or (syncStartTime and os_clock() - syncStartTime > MAX_RENDER_INTERVAL) then
+					syncStartTime = false
+					currentRenderThread = coroutine_create(mainRenderLoop)
+					ok, filter = coroutine_resume(currentRenderThread)
+				end
+			end
+		end
+
+		for _, playerData in ipairs(self.bridge.getUsers()) do
+			self.players[playerData.uuid] = setupPlayer(self, playerData.uuid)
+		end
+
+		parallel.waitForAny(main, renderLoopManager)
+
+		--clean up
+		for _, playerData in ipairs(self.bridge.getUsers()) do
+			local player = self.players[playerData.uuid]
+			if player then
+				local capture = player.surfaceHandler:GetCapture()
+				if capture then
+					capture.stopCapturing()
+				end
+				local playerSurface = self.bridge.getSurfaceByUUID(playerData.uuid)
+				playerSurface.clear()
+			end
+		end
+		self.bridge.sync()
+	end,
+}
+local multiSurfaceHandlerMetatable = {__index = multiSurfaceHandlerMethods}
+
+function newMultiSurfaceHandler(bridge, newPlayerHandler)
+	if not _checkProperty.bridge(bridge) then
+		error("newMultiSurfaceHandler: expected bridge, got "..type(bridge))
+	end
+	if not _checkProperty["function"](newPlayerHandler) then
+		error("newMultiSurfaceHandler: expected function, got "..type(newPlayerHandler))
+	end
+	local multiSurfaceHandler = {
+		bridge = bridge,
+		newPlayerHandler = newPlayerHandler,
+		players = {},
+	}
+	setmetatable(multiSurfaceHandler, multiSurfaceHandlerMetatable)
+	return multiSurfaceHandler
 end
