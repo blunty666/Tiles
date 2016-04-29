@@ -1,0 +1,409 @@
+local tArgs = {...}
+local bridge
+if type(tArgs[1]) == "string" and peripheral.getType(tArgs[1]) == "openperipheral_bridge" then
+	bridge = peripheral.wrap(tArgs[1])
+	bridge.clear()
+else
+	error("could not find bridge on side: "..tostring(tArgs[1]))
+end
+
+os.loadAPI("tiles")
+os.loadAPI("guiTiles")
+os.loadAPI("advancedTiles")
+
+local function makeDraggable(mainTile, dragObject)
+	local function drag(obj, button, relX, relY, absX, absY)
+		mainTile:SetX(mainTile:GetX() + absX)
+		mainTile:SetY(mainTile:GetY() + absY)
+	end
+	dragObject:SetOnDrag(drag)
+end
+
+local function textToSize(text, width)
+	if tiles.getMaxStringLength(text, width, 1) < string.len(text) then
+		return string.sub(text, 1, tiles.getMaxStringLength(text, width - 6, 1)).."..."
+	end
+	return text
+end
+
+local function newPlayerHandler(playerUUID, surfaceHandler)
+	return function()
+
+		local guiHandler = guiTiles.newGuiHandler(surfaceHandler)
+
+		local windows = {}
+		do
+			windows.spacing = 10
+			windows.list = {}
+			windows.orderedList = {}
+			windows.onSelect = function(tile)
+				local windowID = tile:GetUserdata()
+				windows.toFront(windowID)
+			end
+			windows.new = function(tile, width, height)
+				local windowID
+				repeat
+					windowID = math.random(0, 9999)
+				until not windows.list[windowID]
+				
+				local window = guiTiles.newBasicWindow(tile, width, height)
+				
+				windows.list[windowID] = window
+				table.insert(windows.orderedList, windowID)
+				
+				window:SetZ(windows.spacing*#windows.orderedList)
+				makeDraggable(window, window:GetBackground())
+				window:SetUserdata(windowID)
+				window:SetOnSelect(windows.onSelect)
+				
+				return window
+			end
+			windows.reorder = function()
+				for order, windowID in ipairs(windows.orderedList) do
+					local window = windows.list[windowID]
+					if window then
+						window:SetZ(windows.spacing*order)
+					end
+				end
+			end
+			windows.toFront = function(windowID)
+				for order, winID in ipairs(windows.orderedList) do
+					if winID == windowID then
+						table.insert(windows.orderedList, table.remove(windows.orderedList, order))
+						windows.reorder()
+						return true
+					end
+				end
+				return false
+			end
+			windows.toBack = function(windowID)
+				for order, winID in ipairs(windows.orderedList) do
+					if winID == windowID then
+						table.insert(windows.orderedList, 1, table.remove(windows.orderedList, order))
+						windows.reorder()
+						return true
+					end
+				end
+				return false
+			end
+			windows.delete = function(windowID)
+				local window = windows.list[windowID]
+				if window then
+					window:Delete()
+					windows.list[windowID] = nil
+					for order, winID in ipairs(windows.orderedList) do
+						if winID == windowID then
+							table.remove(windows.orderedList, order)
+							windows.reorder()
+							break
+						end
+					end
+					return true
+				end
+				return false
+			end
+		end
+		
+		local peripherals = {}
+		do
+			peripherals.bySource = {}
+			peripherals.selectedSourceList = false
+			
+			peripherals.listWindow = guiTiles.newBasicWindow(surfaceHandler:AddTile(10, 10, 1), 150, 80)
+			peripherals.listWindow:AddFancyText(6, 6, 1, "Sources", 0x000000, 1)
+			
+			local function onListSelect(index, sourceName)
+				if peripherals.selectedSourceList then
+					peripherals.selectedSourceList:SetVisible(false)
+					peripherals.selectedSourceList:SetClickable(false)
+				end
+				local sourceList = peripherals.bySource[sourceName].listWindow
+				if sourceList then
+					sourceList:SetVisible(true)
+					sourceList:SetClickable(true)
+					peripherals.selectedSourceList = sourceList
+				end
+			end
+			peripherals.listObject = peripherals.listWindow:AddList(5, 25, 1, 140, 50, onListSelect, {})
+			
+			peripherals.add = function(sourceName, name)
+				local sourceObject = peripherals.bySource[sourceName].add(name)
+				peripherals.bySource[sourceName].list[name] = sourceObject
+				peripherals.bySource[sourceName].listObject:AddItem(1, name)
+			end
+			peripherals.remove = function(sourceName, name)
+				local sourceObject = peripherals.bySource[sourceName].list[name]
+				windows.delete(sourceObject.windowID)
+				for index, itemName in ipairs(peripherals.bySource[sourceName].listObject.items) do
+					if itemName == name then
+						peripherals.bySource[sourceName].listObject:RemoveItem(index)
+						break
+					end
+				end
+			end
+		end
+
+		local minWidth, minHeight = 50, 20
+		local function newGraphWindow(uniqueID, width, height)
+			local width, height = math.max(width, minWidth), math.max(height, minHeight)
+
+			local window = windows.new(surfaceHandler:AddTile(-(width/2), -(height/2), 1), width, height)
+			window:SetScreenAnchor("MIDDLE", "MIDDLE")
+
+			local title = window:AddText(2, 2, textToSize(uniqueID, width - 10), 0x000000)
+			title:SetZ(1)
+			title:SetClickable(false)
+
+			local closeButton = window:AddButton(width - 8, 1, 1, "X", 0xff0000, 0xffffff, 0x00ff00, 0x000000)
+			closeButton:SetOnRelease(function() window:SetDrawn(false) end)
+			
+			return window
+		end
+
+		--[[ add sources here
+		peripherals.bySource[sourceName] = {
+			add = function(name)
+			end,
+			update = function(name, sourceObject)
+			end,
+		}
+		]]
+		peripherals.bySource["test"] = {
+			add = function(name)
+				local window = newGraphWindow(name, 100, 40)
+				local bar = advancedTiles.addSimpleBoxBar(window, 5, 15, 1, 90, 20, 0xff0000, 1, 0)
+				bar:GetBackground():SetClickable(false)
+				local sourceObject = {
+					windowID = window:GetUserdata(),
+					displays = {
+						mainBar = bar,
+					},
+				}
+				return sourceObject
+			end,
+			update = function(name, sourceObject)
+				sourceObject.displays.mainBar:SetPercent(math.random())
+			end,
+		}
+		peripherals.bySource["test 2"] = {
+			add = function(name)
+				local window = newGraphWindow(name, 100, 80)
+				local graph = advancedTiles.addBoxBarGraph(window, 5, 15, 1, 90, 60, 0xff0000, 1, 1)
+				graph:GetBackground():SetClickable(false)
+				local sourceObject = {
+					windowID = window:GetUserdata(),
+					displays = {
+						mainGraph = graph,
+					},
+				}
+				return sourceObject
+			end,
+			update = function(name, sourceObject)
+				sourceObject.displays.mainGraph:Update(math.random())
+			end,
+		}
+		peripherals.bySource["fluid_handler"] = {
+			add = function(name)
+				local window = newGraphWindow(name, 100, 80)
+				local graph = advancedTiles.addBoxBarGraph(window, 5, 15, 1, 90, 60, 0xff0000, 1, 1)
+				graph:GetBackground():SetClickable(false)
+				local sourceObject = {
+					windowID = window:GetUserdata(),
+					displays = {
+						mainGraph = graph,
+					},
+				}
+				return sourceObject
+			end,
+			update = function(name, sourceObject)
+				local tankInfo = peripheral.call(name, "getTankInfo", "unknown")
+				if tankInfo and tankInfo[1] then
+					local percent
+					if tankInfo[1].contents then
+						percent = tankInfo[1].contents.amount / tankInfo[1].capacity
+					else
+						percent = 0
+					end
+					sourceObject.displays.mainGraph:Update(percent)
+				end
+			end,
+		}
+		peripherals.bySource["rf_receiver"] = {
+			add = function(name)
+				local window = newGraphWindow(name, 100, 80)
+				local graph = advancedTiles.addBoxBarGraph(window, 5, 15, 1, 90, 60, 0xff0000, 1, 1)
+				graph:GetBackground():SetClickable(false)
+				local sourceObject = {
+					windowID = window:GetUserdata(),
+					displays = {
+						mainGraph = graph,
+					},
+				}
+				return sourceObject
+			end,
+			update = function(name, sourceObject)
+				local curEnergy = peripheral.call(name, "getEnergyStored", "unknown")
+				local maxEnergy = peripheral.call(name, "getMaxEnergyStored", "unknown")
+				local percent = 0
+				if type(curEnergy) == "number" and type(maxEnergy) == "number" then
+					percent = curEnergy / maxEnergy
+				end
+				sourceObject.displays.mainGraph:Update(percent)
+			end,
+		}
+		
+		for sourceName, sourceData in pairs(peripherals.bySource) do
+			sourceData.list = {}
+			
+			sourceData.listWindow = guiTiles.newBasicWindow(surfaceHandler:AddTile(165, 10, 1), 150, 80)
+			sourceData.listWindow:SetVisible(false)
+			sourceData.listWindow:SetClickable(false)
+			
+			sourceData.listWindow:AddFancyText(6, 6, 1, sourceName, 0x000000, 1)
+			
+			local function onListSelect(index, name)
+				local windowID = sourceData.list[name].windowID
+				if windowID then
+					local window = windows.list[windowID]
+					if window then
+						windows.toFront(windowID)
+						window:SetDrawn(true)
+					end
+				end
+			end
+			sourceData.listObject = sourceData.listWindow:AddList(5, 25, 1, 140, 50, onListSelect, {})
+			
+			peripherals.listObject:AddItem(1, sourceName)
+		end
+
+		local waiting = false
+		local function update()
+			while true do
+				for sourceName, sourceData in pairs(peripherals.bySource) do
+					for name, sourceObject in pairs(sourceData.list) do
+						sourceData.update(name, sourceObject)
+					end
+				end
+				waiting = true
+				sleep(1)
+				waiting = false
+			end
+		end
+		local updateRoutine = coroutine.create(update)
+		
+		do -- main
+			-- initial peripheral discovery
+			for _, name in pairs(peripheral.getNames()) do
+				local methods = peripheral.getMethods(name)
+				for _, method in ipairs(methods) do
+					if method == "listSources" then
+						local sources = peripheral.call(name, "listSources")
+						if sources then
+							for source, _ in pairs(sources) do
+								if peripherals.bySource[source] then
+									print("source = ", source, ", name = ", name)
+									peripherals.add(source, name)
+								end
+							end
+						end
+						break
+					end
+				end
+			end		
+
+			peripherals.listWindow:SetDrawn(true)
+			for _, sourceData in pairs(peripherals.bySource) do
+				sourceData.listWindow:SetDrawn(true)
+			end
+			
+			peripherals.add("test", "test_object")
+			peripherals.add("test 2", "test_object_2")
+			--[[
+			local window1 = newGraphWindow("window1", 90, 40)
+			window1:SetColor(math.random(0, 16777215))
+			window1:SetDrawn(true)
+			local window2 = newGraphWindow("window2", 0, 0)
+			window2:SetColor(math.random(0, 16777215))
+			window2:SetDrawn(true)
+			]]
+			
+			--local UPDATE_INTERVAL = 5
+			--local updateTimer = os.startTimer(UPDATE_INTERVAL)
+			local nullClickTime, nullClickButton = -math.huge, false
+			while true do
+				local event = {os.pullEvent()}
+				guiHandler:HandleEvent(event)
+				if event[1] == "task_complete" and type(event[2]) ~= "number" then
+					print("task_complete error")
+				end
+				if event[1] == "glasses_capture" then
+					peripherals.listWindow:SetVisible(true)
+					if peripherals.selectedSourceList then
+						peripherals.selectedSourceList:SetVisible(true)
+						peripherals.selectedSourceList:SetClickable(true)
+					end
+					for _, window in pairs(windows.list) do
+						window:SetOpacity(1)
+					end
+				elseif event[1] == "glasses_release" then
+					peripherals.listWindow:SetVisible(false)
+					if peripherals.selectedSourceList then
+						peripherals.selectedSourceList:SetVisible(false)
+						peripherals.selectedSourceList:SetClickable(false)
+					end
+					for _, window in pairs(windows.list) do
+						window:SetOpacity(0.75)
+					end
+				elseif event[1] == "glasses_mouse_down" then
+					local newClickTime = os.clock()
+					if nullClickButton == event[5] and newClickTime - nullClickTime < 0.25 then
+						if nullClickButton == 0 then
+							-- exit capture mode
+							local capture = surfaceHandler:GetCapture()
+							if capture then
+								capture.stopCapturing()
+							end
+						elseif nullClickButton == 1 then
+							-- reset window positions to centre of the screen
+							for _, window in pairs(windows.list) do
+								window:SetX(-(window:GetWidth()/2))
+								window:SetY(-(window:GetHeight()/2))
+							end
+						end
+						nullClickTime, nullClickButton = -math.huge, false
+					else
+						if event[5] == 0 then
+							if peripherals.selectedSourceList then
+								peripherals.selectedSourceList:SetVisible(false)
+								peripherals.selectedSourceList:SetClickable(false)
+								peripherals.selectedSourceList = false
+								peripherals.listObject:SetSelected(false, true)
+							end
+						end
+					end
+					nullClickTime = newClickTime
+					nullClickButton = event[5]
+					--[[
+				elseif event[1] == "timer" then
+					if event[2] == updateTimer then
+						for sourceName, sourceData in pairs(peripherals.bySource) do
+							for name, sourceObject in pairs(sourceData.list) do
+								sourceData.update(name, sourceObject)
+							end
+						end
+						updateTimer = os.startTimer(UPDATE_INTERVAL)
+					end
+					]]
+				elseif event[1] == "timer" and waiting then
+					coroutine.resume(updateRoutine, unpack(event))
+				elseif event[1] == "task_complete" and not waiting then
+					coroutine.resume(updateRoutine, unpack(event))
+				end
+			end
+		end
+	end
+end
+
+local handler = tiles.newMultiSurfaceHandler(bridge, newPlayerHandler)
+
+handler:Run()

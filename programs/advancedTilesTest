@@ -8,19 +8,8 @@ else
 end
 
 os.loadAPI("tiles")
-os.loadAPI("multiSurfaceHandler")
 os.loadAPI("guiTiles")
 os.loadAPI("advancedTiles")
-
-local function newSurfaceHandler(playerUUID)
-	local playerSurface = bridge.getSurfaceByUUID(playerUUID)
-	playerSurface.clear()
-	
-	local playerCapture = bridge.getCaptureControl(playerUUID)
-	playerCapture.stopCapturing()
-	
-	return tiles.newSurfaceHandler(playerSurface, playerCapture)
-end
 
 local function makeDraggable(mainTile, dragObject)
 	local function drag(obj, button, relX, relY, absX, absY)
@@ -257,7 +246,7 @@ local function newPlayerHandler(playerUUID, surfaceHandler)
 					if event[2] == timer1 then
 						local percent = math.random()
 						for _, bar in ipairs(bars) do
-							bar:Update(percent)
+							bar:SetPercent(percent)
 						end
 						update()
 						timer1 = os.startTimer(1)
@@ -271,6 +260,6 @@ local function newPlayerHandler(playerUUID, surfaceHandler)
 	end
 end
 
-local handler = multiSurfaceHandler.new(bridge, newSurfaceHandler, newPlayerHandler)
+local handler = tiles.newMultiSurfaceHandler(bridge, newPlayerHandler)
 
 handler:Run()
