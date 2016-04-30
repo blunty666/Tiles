@@ -981,13 +981,13 @@ do
 			local tile = object:GetTile()
 			repeat
 				if tile then
-					selectFunc = tile[funcName](tile)
+					local selectFunc = tile[funcName](tile)
 					if selectFunc then
 						selectFunc(tile, object, ...)
 					end
 					tile = tile:GetParent()
 				end
-			until not tile or tile:IsMasterTile()
+			until (not tile) or tile:IsMasterTile()
 		end
 	end
 
