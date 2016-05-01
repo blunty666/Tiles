@@ -134,7 +134,8 @@ local complexBarMethods = {
 	SetPercent = function(self, percent)
 		if type(percent) == "number" then
 			self.percent = math.max(0, math.min(1, percent))
-			local segmentsDrawn = math.ceil(self.percent*#self.segments)
+			local segmentsDrawn = self.percent*#self.segments
+			segmentsDrawn = math.floor(segmentsDrawn) + math.floor(2*(segmentsDrawn%1))
 			for i, segment in ipairs(self.segments) do
 				segment:SetVisible(i <= segmentsDrawn)
 			end

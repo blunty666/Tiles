@@ -38,12 +38,24 @@ do
 		GetTile = function(self)
 			return self.tile
 		end,
+		GetAlpha = function(self)
+			return self.main:GetAlpha()
+		end,
+		SetAlpha = function(self, alpha)
+			if tiles.checkProperty.alpha(alpha) then
+				self.main:SetAlpha(alpha)
+				self.shadow:SetAlpha(alpha/3)
+				return true
+			end
+			return false
+		end,
 		GetColor = function(self)
 			return self.main:GetColor()
 		end,
 		SetColor = function(self, colour)
 			if tiles.checkProperty.colour(colour) then
 				self.main:SetColor(colour)
+				self.shadow:SetColor(colour/3)
 				return true
 			end
 			return false
@@ -76,7 +88,7 @@ do
 		local fancyText = {
 			tile = subTile,
 			main = addText(subTile, 0, 0, 1, text, colour, alpha),
-			shadow = addText(subTile, 1, 1, 0, text, colour, alpha/3),
+			shadow = addText(subTile, 1, 1, 0, text, colour/3, alpha/3),
 		}
 		return setmetatable(fancyText, fancyTextMetatable)
 	end
@@ -908,6 +920,85 @@ do
 	end
 end
 
+--===== ITEM SLOT =====--
+do
+	local slotWidth = 16
+	local function createSlotPoints(xPos, yPos)
+		return {
+			{x = xPos, y = yPos},
+			{x = xPos + slotWidth, y = yPos},
+			{x = xPos + slotWidth, y = yPos + slotWidth},
+			{x = xPos, y = yPos + slotWidth},
+			{x = xPos, y = yPos},
+		}
+	end
+	
+	local itemSlotMethods = {
+		GetAmount = function(self)
+			return self.amount
+		end,
+		SetAmount = function(self, amount)
+			if tiles.checkProperty.positive_number(amount) then
+				self.amount = amount
+				self.icon:SetVisible(true)
+				self.icon:SetLabel((amount ~= 1 and tostring(amount)) or "")
+			elseif amount == false then
+				self.amount = amount
+				self.icon:SetVisible(false)
+			end
+		end,
+		GetItemId = function(self)
+			return self.icon:GetItemId()
+		end,
+		SetItemId = function(self, itemId)
+			return self.icon:SetItemId(itemId)
+		end,
+		GetMeta = function(self)
+			return self.icon:GetMeta()
+		end,
+		SetMeta = function(self, meta)
+			return self.icon:SetMeta(meta)
+		end,
+		GetDamageBar = function(self)
+			return self.icon:GetDamageBar()
+		end,
+		SetDamageBar = function(self, damage)
+			return self.icon:SetDamageBar(damage)
+		end,
+	}
+	local itemSlotMetatable = makeMetatable(itemSlotMethods)
+
+	function addItemSlot(tile, xPos, yPos, zPos)
+		local itemSlotTile = tile:AddSubTile(xPos, yPos, zPos)
+
+		local itemSlotBackground = itemSlotTile:AddBox(0, 0, slotWidth, slotWidth, 0x999999, 1)
+		itemSlotBackground:SetObjectAnchor("MIDDLE", "MIDDLE")
+
+		local itemSlotBorder = itemSlotTile:AddLineList(0x000000, 1, createSlotPoints(0, 0))
+		itemSlotBorder:SetZ(1)
+		itemSlotBorder:SetObjectAnchor("MIDDLE", "MIDDLE")
+		itemSlotBorder:SetClickable(false)
+
+		local itemSlotIcon = itemSlotTile:AddIcon(0, 0, "minecraft:stone")
+		itemSlotIcon:SetZ(2)
+		itemSlotIcon:SetObjectAnchor("MIDDLE", "MIDDLE")
+		itemSlotIcon:SetVisible(false)
+		itemSlotIcon:SetClickable(false)
+		
+		local itemSlot = {
+			tile = itemSlotTile,
+
+			amount = false,
+
+			background = itemSlotBackground,
+			border = itemSlotBorder,
+			icon = itemSlotIcon,
+		}
+
+		return setmetatable(itemSlot, itemSlotMetatable)
+	end
+end
+
 --===== BASIC WINDOW =====--
 do
 	local basicWindowMethods = {
@@ -916,6 +1007,7 @@ do
 		AddSlider = addSlider,
 		AddList = addList,
 		AddTextBox = addTextBox,
+		AddItemSlot = addItemSlot,
 
 		GetBackground = function(self)
 			return self.background

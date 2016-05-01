@@ -808,7 +808,7 @@ local objects = {
 		properties = {
 			X = "number", Y = "number",
 			ItemId = "string", Meta = "positive_number",
-			DamageBar = "positive_number", Label = "string",
+			DamageBar = "percent", Label = "string",
 			Scale = "positive_number",
 		},
 		draw = function(tile, iconObject)
