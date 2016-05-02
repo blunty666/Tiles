@@ -32,6 +32,14 @@ local function isIntegerWithinBounds(value, minVal, maxVal)
 	return type(value) == "number" and value % 1 == 0 and value >= minVal and value <= maxVal
 end
 
+function makeDraggable(mainTile, dragObject)
+	local function drag(obj, button, relX, relY, absX, absY)
+		mainTile:SetX(mainTile:GetX() + absX)
+		mainTile:SetY(mainTile:GetY() + absY)
+	end
+	dragObject:SetOnDrag(drag)
+end
+
 --===== FANCY TEXT =====--
 do
 	local fancyTextMethods = {
@@ -450,8 +458,8 @@ do
 	local function updateItemTile(item, itemData, width)
 		item.background:SetWidth(width)
 		local itemText = itemData
-		if tiles.getMaxStringLength(itemData, width - 2, 1) < string.len(itemData) then
-			local textLen = tiles.getMaxStringLength(itemData, width - 8, 1)
+		if tiles.getMaxStringLength(itemText, width - 2, 1) < string.len(itemText) then
+			local textLen = tiles.getMaxStringLength(itemText, width - 8, 1)
 			itemText = string.sub(itemText, 1, textLen).."..."
 		end
 		item.text:SetText(itemText)
@@ -459,7 +467,7 @@ do
 	
 	local function updateItemTiles(list, startIndex, width)
 		for i = startIndex, #list.items do
-			local item, itemData = list.itemTiles[i], list.items[i]
+			local item, itemData = list.itemTiles[i], list.items[i][2]
 			updateItemTile(item, itemData, width)
 		end
 	end
@@ -497,9 +505,9 @@ do
 		background:SetOnScroll(itemObjectScroll)
 		background:SetUserdata({list, index})
 		
-		local itemText = itemData
-		if tiles.getMaxStringLength(itemData, width - 2, 1) < string.len(itemData) then
-			local textLen = tiles.getMaxStringLength(itemData, width - 8, 1)
+		local itemText = itemData[2]
+		if tiles.getMaxStringLength(itemText, width - 2, 1) < string.len(itemText) then
+			local textLen = tiles.getMaxStringLength(itemText, width - 8, 1)
 			itemText = string.sub(itemText, 1, textLen).."..."
 		end
 		local text = itemTile:AddText(1, 1, itemText, 0x000000)
@@ -548,6 +556,9 @@ do
 					end
 				end
 				
+				if not noUpdate and self.onHighlightedChanged then
+				end
+				
 				-- update highlighted value
 				self.highlighted = index
 				
@@ -585,7 +596,7 @@ do
 				end
 				
 				if not noUpdate and self.onSelectedChanged then
-					self.onSelectedChanged(index, self.items[index])
+					self.onSelectedChanged(index, index and unpack(self.items[index]))
 				end
 				
 				-- update selected value
@@ -619,12 +630,12 @@ do
 		end,
 
 		AddItem = function(self, index, itemData)
-			if isIntegerWithinBounds(index, 1, #self.items + 1) and tiles.checkProperty.string(itemData) then
+			if isIntegerWithinBounds(index, 1, #self.items + 1) then
 			
 				local widthChanged, itemWidth = updateSlider(self, #self.items + 1)
 
 				table.insert(self.items, index, itemData)
-				table.insert(self.itemTiles, newItemTile(self, self.itemsTile, #self.itemTiles + 1, itemWidth, ""))
+				table.insert(self.itemTiles, newItemTile(self, self.itemsTile, #self.itemTiles + 1, itemWidth, {"", ""}))
 				
 				updateItemTiles(self, (widthChanged and 1) or index, itemWidth)
 				redrawItemsTile(self, self.startIndex)
@@ -646,10 +657,10 @@ do
 			end
 		end,
 		SetItem = function(self, index, itemData)
-			if isIntegerWithinBounds(index, 1, #self.items) and tiles.checkProperty.string(itemData) then
+			if isIntegerWithinBounds(index, 1, #self.items) then
 				local _, itemWidth = updateSlider(self, #self.items)
 				self.items[index] = itemData
-				updateItemTile(self.itemTiles[index], itemData, itemWidth)
+				updateItemTile(self.itemTiles[index], itemData[2], itemWidth)
 				return true
 			end
 			return false
@@ -879,6 +890,17 @@ do
 			end
 			return false
 		end,
+		
+		GetOnEnter = function(self)
+			return self.onEnter
+		end,
+		SetOnEnter = function(self, func)
+			if tiles.checkProperty.functionOrNil(func) then
+				self.onEnter = func
+				return true
+			end
+			return false
+		end,
 	}
 	local textBoxMetatable = makeMetatable(textBoxMethods)
 
@@ -1037,22 +1059,146 @@ do
 	}
 	local basicWindowMetatable = makeMetatable(basicWindowMethods)
 
-	function newBasicWindow(tile, width, height)
+	function newBasicWindow(tile, width, height, draggable)
 		local basicWindow = {
 			tile = tile,
 			width = width,
 			height = height,
+			draggable = false,
 			background = tile:AddBox(0, 0, width, height, 0xffffff, 1),
 			border = tile:AddLineList(0x000000, 1, {{x = 0, y = 0}, {x = width, y = 0}, {x = width, y = height}, {x = 0, y = height}, {x = 0, y = 0}})
 		}
 		basicWindow.border:SetZ(1)
 		basicWindow.border:SetClickable(false)
-		return setmetatable(basicWindow, basicWindowMetatable)
+		
+		setmetatable(basicWindow, basicWindowMetatable)
+		
+		if draggable == true then
+			basicWindow.draggable = true
+			makeDraggable(basicWindow, basicWindow:GetBackground())
+		end
+		
+		return basicWindow
+	end
+end
+
+--===== BASIC WINDOW HANDLER =====--
+do
+	local function onWindowSelectFunc(window)
+		local handler, windowID = unpack(window:GetUserdata())
+		handler:ToFront(windowID)
+	end
+	
+	local function reorder(basicWindowHandler)
+		for order, windowID in ipairs(basicWindowHandler.orderedList) do
+			local window = basicWindowHandler.list[windowID]
+			if window then
+				window:SetZ(basicWindowHandler.spacing*order)
+			end
+		end
+	end
+	
+	local basicWindowHandlerMethods = {
+		New = function(self, tile, width, height, draggable)
+			local windowID
+			repeat
+				windowID = math.random(0, 9999)
+			until not self.list[windowID]
+
+			local window = newBasicWindow(tile, width, height, draggable)
+
+			self.list[windowID] = window
+			table.insert(self.orderedList, windowID)
+
+			window:SetZ(self.spacing*#self.orderedList)
+			window:SetUserdata({self, windowID})
+			window:SetOnSelect(onWindowSelectFunc)
+
+			return window
+		end,
+		ToFront = function(self, windowID)
+			for order, winID in ipairs(self.orderedList) do
+				if winID == windowID then
+					table.insert(self.orderedList, table.remove(self.orderedList, order))
+					reorder(self)
+					return true
+				end
+			end
+			return false
+		end,
+		ToBack = function(self, windowID)
+			for order, winID in ipairs(self.orderedList) do
+				if winID == windowID then
+					table.insert(self.orderedList, 1, table.remove(self.orderedList, order))
+					reorder(self)
+					return true
+				end
+			end
+			return false
+		end,
+		Delete = function(self, windowID)
+			local window = self.list[windowID]
+			if window then
+				window:Delete()
+				self.list[windowID] = nil
+				for order, winID in ipairs(self.orderedList) do
+					if winID == windowID then
+						table.remove(self.orderedList, order)
+						reorder(self)
+						break
+					end
+				end
+				return true
+			end
+			return false
+		end,
+		GetWindow = function(self, windowID)
+			return self.list[windowID]
+		end,
+		GetAllWindows = function(self)
+			local windows = {}
+			for windowID, window in pairs(self.list) do
+				windows[windowID] = window
+			end
+			return windows
+		end,
+		GetSpacing = function(self)
+			return self.spacing
+		end,
+		SetSpacing = function(self, spacing)
+			if tiles.checkProperty.positive_number(spacing) then
+				self.spacing = spacing
+				reorder(self)
+				return true
+			end
+			return false
+		end,
+	}
+	local basicWindowHandlerMetatable = makeMetatable(basicWindowHandlerMethods)
+
+	function newBasicWindowHandler()
+		local basicWindowHandler = {
+			spacing = 10,
+			list = {},
+			orderedList = {},
+		}
+		return setmetatable(basicWindowHandler, basicWindowHandlerMetatable)
 	end
 end
 
 --===== GUI HANDLER =====--
 do
+	local function findChain(object)
+		local chain = {}
+		local tile = object:GetTile()
+		chain[tile:GetID()] = tile
+		while not tile:IsMasterTile() do
+			tile = tile:GetParent()
+			chain[tile:GetID()] = tile
+		end
+		return chain
+	end
+
 	local function passEventToObject(surfaceHandler, objectID, funcName, ...)
 		local object = findObject(surfaceHandler, objectID)
 		if object then
@@ -1063,23 +1209,17 @@ do
 		end
 	end
 
-	local function passEventUpChain(surfaceHandler, objectID, funcName, ...)
-		local object = findObject(surfaceHandler, objectID)
-		if object then
-			local func = object[funcName](object)
-			if func then
-				func(object, ...)
+	local function passEventUpChain(surfaceHandler, object, chain, funcName, ...)
+		if not object then error("here", 2) end
+		local func = object[funcName](object)
+		if func then
+			func(object, ...)
+		end
+		for _, tile in pairs(chain) do
+			local selectFunc = tile[funcName](tile)
+			if selectFunc then
+				selectFunc(tile, object, ...)
 			end
-			local tile = object:GetTile()
-			repeat
-				if tile then
-					local selectFunc = tile[funcName](tile)
-					if selectFunc then
-						selectFunc(tile, object, ...)
-					end
-					tile = tile:GetParent()
-				end
-			until (not tile) or tile:IsMasterTile()
 		end
 	end
 
@@ -1116,19 +1256,28 @@ do
 			if handler.lastObjectID then
 				local keyChar = event[6]:gsub("%c", "")
 				keyChar = (keyChar:len() > 0 and keyChar) or nil
-				passEventUpChain(handler.surfaceHandler, handler.lastObjectID, "GetOnKeyDown", event[5], keyChar, event[7])
+				local object = findObject(handler.surfaceHandler, handler.lastObjectID)
+				if object then
+					passEventUpChain(handler.surfaceHandler, object, findChain(object), "GetOnKeyDown", event[5], keyChar, event[7])
+				end
 			end
 		end,
 		glasses_key_up = function(handler, event)
 			if handler.lastObjectID then
-				passEventUpChain(handler.surfaceHandler, handler.lastObjectID, "GetOnKeyUp", event[5])
+				local object = findObject(handler.surfaceHandler, handler.lastObjectID)
+				if object then
+					passEventUpChain(handler.surfaceHandler, object, findChain(object), "GetOnKeyUp", event[5])
+				end
 			end
 		end,
 		--glasses_mouse_scroll = function(handler, event)
 		--end,
 		glasses_mouse_down = function(handler, event)
 			if handler.lastObjectID then
-				passEventUpChain(handler.surfaceHandler, handler.lastObjectID, "GetOnDeselect")
+				local object = findObject(handler.surfaceHandler, handler.lastObjectID)
+				if object then
+					passEventUpChain(handler.surfaceHandler, object, findChain(object), "GetOnDeselect")
+				end
 			end
 			handler.lastObjectID = false
 		end,
@@ -1168,11 +1317,22 @@ do
 				passEventToObject(handler.surfaceHandler, handler.lastClickedObjectID, "GetOnRelease", handler.button, handler.relativeX, handler.relativeY, handler.actualX, handler.actualY)
 			end
 			if not handler.lastObjectID or event[5] ~= handler.lastObjectID then
+				local newObject = findObject(handler.surfaceHandler, event[5])
+				local selectedChain = (newObject and findChain(newObject)) or {}
 				if handler.lastObjectID then
-					passEventUpChain(handler.surfaceHandler, handler.lastObjectID, "GetOnDeselect")
+					local object = findObject(handler.surfaceHandler, handler.lastObjectID)
+					if object then
+						local deselectedChain = findChain(object)
+						for tileID, _ in pairs(selectedChain) do
+							deselectedChain[tileID] = nil
+						end
+						passEventUpChain(handler.surfaceHandler, object, deselectedChain, "GetOnDeselect")
+					end
 				end
 				handler.lastObjectID = event[5]
-				passEventUpChain(handler.surfaceHandler, handler.lastObjectID, "GetOnSelect")
+				if newObject then
+					passEventUpChain(handler.surfaceHandler, newObject, selectedChain, "GetOnSelect")
+				end
 			end
 			local object = findObject(handler.surfaceHandler, event[5])
 			if object then

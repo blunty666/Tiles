@@ -7,20 +7,24 @@ else
 	error("could not find bridge on side: "..tostring(tArgs[1]))
 end
 
-os.loadAPI("tiles")
-os.loadAPI("guiTiles")
-os.loadAPI("advancedTiles")
+local requiredAPIs = {
+	"tiles",
+	"guiTiles",
+	"advancedTiles",
+}
 
-local function makeDraggable(mainTile, dragObject)
-	local function drag(obj, button, relX, relY, absX, absY)
-		mainTile:SetX(mainTile:GetX() + absX)
-		mainTile:SetY(mainTile:GetY() + absY)
+for _, apiName in ipairs(requiredAPIs) do
+	if not _G.apiName then
+		if not os.loadAPI(apiName) then
+			error("Could not load API: ", apiName)
+		end
 	end
-	dragObject:SetOnDrag(drag)
 end
 
 local function textToSize(text, width)
-	if tiles.getMaxStringLength(text, width, 1) < string.len(text) then
+	if width <= 6 then
+		return "..."
+	elseif tiles.getMaxStringLength(text, width, 1) < string.len(text) then
 		return string.sub(text, 1, tiles.getMaxStringLength(text, width - 6, 1)).."..."
 	end
 	return text
@@ -31,309 +35,406 @@ local function newPlayerHandler(playerUUID, surfaceHandler)
 
 		local guiHandler = guiTiles.newGuiHandler(surfaceHandler)
 
-		local windows = {}
-		do
-			windows.spacing = 10
-			windows.list = {}
-			windows.orderedList = {}
-			windows.onSelect = function(tile)
-				local windowID = tile:GetUserdata()
-				windows.toFront(windowID)
-			end
-			windows.new = function(tile, width, height)
-				local windowID
-				repeat
-					windowID = math.random(0, 9999)
-				until not windows.list[windowID]
-				
-				local window = guiTiles.newBasicWindow(tile, width, height)
-				
-				windows.list[windowID] = window
-				table.insert(windows.orderedList, windowID)
-				
-				window:SetZ(windows.spacing*#windows.orderedList)
-				makeDraggable(window, window:GetBackground())
-				window:SetUserdata(windowID)
-				window:SetOnSelect(windows.onSelect)
-				
-				return window
-			end
-			windows.reorder = function()
-				for order, windowID in ipairs(windows.orderedList) do
-					local window = windows.list[windowID]
-					if window then
-						window:SetZ(windows.spacing*order)
-					end
-				end
-			end
-			windows.toFront = function(windowID)
-				for order, winID in ipairs(windows.orderedList) do
-					if winID == windowID then
-						table.insert(windows.orderedList, table.remove(windows.orderedList, order))
-						windows.reorder()
-						return true
-					end
-				end
-				return false
-			end
-			windows.toBack = function(windowID)
-				for order, winID in ipairs(windows.orderedList) do
-					if winID == windowID then
-						table.insert(windows.orderedList, 1, table.remove(windows.orderedList, order))
-						windows.reorder()
-						return true
-					end
-				end
-				return false
-			end
-			windows.delete = function(windowID)
-				local window = windows.list[windowID]
-				if window then
-					window:Delete()
-					windows.list[windowID] = nil
-					for order, winID in ipairs(windows.orderedList) do
-						if winID == windowID then
-							table.remove(windows.orderedList, order)
-							windows.reorder()
-							break
-						end
-					end
-					return true
-				end
-				return false
-			end
-		end
-		
-		local peripherals = {}
-		do
-			peripherals.bySource = {}
-			peripherals.selectedSourceList = false
-			
-			peripherals.listWindow = guiTiles.newBasicWindow(surfaceHandler:AddTile(10, 10, 1), 150, 80)
-			peripherals.listWindow:AddFancyText(6, 6, 1, "Sources", 0x000000, 1)
-			
-			local function onListSelect(index, sourceName)
-				if peripherals.selectedSourceList then
-					peripherals.selectedSourceList:SetVisible(false)
-					peripherals.selectedSourceList:SetClickable(false)
-				end
-				local sourceList = peripherals.bySource[sourceName].listWindow
-				if sourceList then
-					sourceList:SetVisible(true)
-					sourceList:SetClickable(true)
-					peripherals.selectedSourceList = sourceList
-				end
-			end
-			peripherals.listObject = peripherals.listWindow:AddList(5, 25, 1, 140, 50, onListSelect, {})
-			
-			peripherals.add = function(sourceName, name)
-				local sourceObject = peripherals.bySource[sourceName].add(name)
-				peripherals.bySource[sourceName].list[name] = sourceObject
-				peripherals.bySource[sourceName].listObject:AddItem(1, name)
-			end
-			peripherals.remove = function(sourceName, name)
-				local sourceObject = peripherals.bySource[sourceName].list[name]
-				windows.delete(sourceObject.windowID)
-				for index, itemName in ipairs(peripherals.bySource[sourceName].listObject.items) do
-					if itemName == name then
-						peripherals.bySource[sourceName].listObject:RemoveItem(index)
-						break
-					end
-				end
-			end
-		end
+		local windowHandler = guiTiles.newBasicWindowHandler()
 
 		local minWidth, minHeight = 50, 20
-		local function newGraphWindow(uniqueID, width, height)
+		local function newGraphWindow(uniqueID, width, height, updateName, objectType)
 			local width, height = math.max(width, minWidth), math.max(height, minHeight)
 
-			local window = windows.new(surfaceHandler:AddTile(-(width/2), -(height/2), 1), width, height)
+			local window = windowHandler:New(surfaceHandler:AddTile(-(width/2), -(height/2), 1), width, height, true)
 			window:SetScreenAnchor("MIDDLE", "MIDDLE")
-
-			local title = window:AddText(2, 2, textToSize(uniqueID, width - 10), 0x000000)
-			title:SetZ(1)
-			title:SetClickable(false)
+			
+			local textBox = window:AddTextBox(1, 1, 1, width - 10, function(text) updateName(objectType, uniqueID, text) end)
+			textBox.background:SetVisible(false)
+			textBox:SetText(uniqueID)
+			textBox:SetOnDeselect(function(text) updateName(objectType, uniqueID, textBox:GetText()) end)
 
 			local closeButton = window:AddButton(width - 8, 1, 1, "X", 0xff0000, 0xffffff, 0x00ff00, 0x000000)
 			closeButton:SetOnRelease(function() window:SetDrawn(false) end)
 			
 			return window
 		end
+		
+		local selectionWindow = guiTiles.newBasicWindow(surfaceHandler:AddTile(10, 10, 1), 80, 50)
+		local peripheralTypes = {}
+		local sourceTypes = {}
+		
+		local peripheralButton = selectionWindow:AddButton(10, 10, 1, "Peripherals", 0x7fcc19, 0x000000, 0x57a64e, 0x000000)
+		peripheralButton:SetOnRelease(
+			function()
+				sourceTypes.listWindow:SetVisible(false)
+				sourceTypes.listWindow:SetClickable(false)
+				peripheralTypes.listWindow:SetVisible(true)
+				peripheralTypes.listWindow:SetClickable(true)
+			end
+		)
+		local sourceButton = selectionWindow:AddButton(17, 30, 1, "Sources", 0x7fcc19, 0x000000, 0x57a64e, 0x000000)
+		sourceButton:SetOnRelease(
+			function()
+				peripheralTypes.listWindow:SetVisible(false)
+				peripheralTypes.listWindow:SetClickable(false)
+				sourceTypes.listWindow:SetVisible(true)
+				sourceTypes.listWindow:SetClickable(true)
+			end
+		)
+		
+		do -- peripheralTypes
+			peripheralTypes.list = {}
+			peripheralTypes.selectedTypeList = false
+			
+			peripheralTypes.listWindow = guiTiles.newBasicWindow(selectionWindow:AddSubTile(selectionWindow:GetWidth() + 5, 0, 1), 150, 80)
+			peripheralTypes.listWindow:SetVisible(false)
+			peripheralTypes.listWindow:SetClickable(false)
+			peripheralTypes.listWindow:AddFancyText(6, 6, 1, "Peripherals", 0x000000, 1)
+			
+			local function onListSelect(index, peripheralType)
+				if peripheralTypes.selectedTypeList then
+					peripheralTypes.selectedTypeList:SetVisible(false)
+					peripheralTypes.selectedTypeList:SetClickable(false)
+				end
+				local sourceList = peripheralTypes.list[peripheralType].listWindow
+				if sourceList then
+					sourceList:SetVisible(true)
+					sourceList:SetClickable(true)
+					peripheralTypes.selectedTypeList = sourceList
+				end
+			end
+			peripheralTypes.listObject = peripheralTypes.listWindow:AddList(5, 25, 1, 140, 50, onListSelect, {})
+			
+			peripheralTypes.add = function(peripheralType, name)
+				local peripheralData = peripheralTypes.list[peripheralType]
+				if peripheralData then
+					local window = newGraphWindow(name, peripheralData.width, peripheralData.height, peripheralTypes.update, peripheralType)
+					local object = peripheralTypes.list[peripheralType].add(name, window)
+					peripheralTypes.list[peripheralType].list[name] = object
+					peripheralTypes.list[peripheralType].listObject:AddItem(1, {name, name})
+				end
+			end
+			peripheralTypes.update = function(peripheralType, peripheralName, peripheralNewName)
+				if peripheralTypes.list[peripheralType] then
+					local list = peripheralTypes.list[peripheralType].listObject
+					
+					for index, itemData in ipairs(list.items) do
+						if itemData[1] == peripheralName then
+							list:SetItem(index, {itemData[1], peripheralNewName})
+							break
+						end
+					end
+				end
+			end
+			peripheralTypes.remove = function(peripheralType, name)
+				local object = peripheralTypes.list[peripheralType].list[name]
+				windowHandler:Delete(object.windowID)
+				for index, itemName in ipairs(peripheralTypes.list[peripheralType].listObject.items) do
+					if itemName[1] == name then
+						peripheralTypes.list[peripheralType].listObject:RemoveItem(index)
+						break
+					end
+				end
+			end
+		end
+		
+		do -- sourceTypes
+			sourceTypes.list = {}
+			sourceTypes.selectedTypeList = false
+			
+			sourceTypes.listWindow = guiTiles.newBasicWindow(selectionWindow:AddSubTile(selectionWindow:GetWidth() + 5, 0, 1), 150, 80)
+			sourceTypes.listWindow:SetVisible(false)
+			sourceTypes.listWindow:SetClickable(false)
+			sourceTypes.listWindow:AddFancyText(6, 6, 1, "Sources", 0x000000, 1)
+			
+			local function onListSelect(index, sourceType)
+				if sourceTypes.selectedTypeList then
+					sourceTypes.selectedTypeList:SetVisible(false)
+					sourceTypes.selectedTypeList:SetClickable(false)
+				end
+				local sourceList = sourceTypes.list[sourceType].listWindow
+				if sourceList then
+					sourceList:SetVisible(true)
+					sourceList:SetClickable(true)
+					sourceTypes.selectedTypeList = sourceList
+				end
+			end
+			sourceTypes.listObject = sourceTypes.listWindow:AddList(5, 25, 1, 140, 50, onListSelect, {})
+			
+			sourceTypes.add = function(sourceType, name)
+				local sourceData = sourceTypes.list[sourceType]
+				if sourceData then
+					local window = newGraphWindow(name, sourceData.width, sourceData.height, sourceTypes.update, sourceType)
+					local sourceObject = sourceTypes.list[sourceType].add(name, window)
+					sourceTypes.list[sourceType].list[name] = sourceObject
+					sourceTypes.list[sourceType].listObject:AddItem(1, {name, name})
+				end
+			end
+			sourceTypes.update = function(sourceType, sourceName, sourceNewName)
+				if sourceTypes.list[sourceType] then
+					local list = sourceTypes.list[sourceType].listObject
+					
+					for index, itemData in ipairs(list.items) do
+						if itemData[1] == sourceName then
+							list:SetItem(index, {itemData[1], sourceNewName})
+							break
+						end
+					end
+				end
+			end
+			sourceTypes.remove = function(sourceType, name)
+				local sourceObject = sourceTypes.list[sourceType].list[name]
+				windowHandler:Delete(sourceObject.windowID)
+				for index, itemName in ipairs(sourceTypes.list[sourceType].listObject.items) do
+					if itemName[1] == name then
+						sourceTypes.list[sourceType].listObject:RemoveItem(index)
+						break
+					end
+				end
+			end
+		end
 
-		--[[ add sources here
-		peripherals.bySource[sourceName] = {
-			add = function(name)
-			end,
-			update = function(name, sourceObject)
-			end,
-		}
-		]]
-		peripherals.bySource["test"] = {
-			add = function(name)
-				local window = newGraphWindow(name, 100, 40)
-				local bar = advancedTiles.addSimpleBoxBar(window, 5, 15, 1, 90, 20, 0xff0000, 1, 0)
-				bar:GetBackground():SetClickable(false)
-				local sourceObject = {
-					windowID = window:GetUserdata(),
-					displays = {
-						mainBar = bar,
-					},
-				}
-				return sourceObject
-			end,
-			update = function(name, sourceObject)
-				sourceObject.displays.mainBar:SetPercent(math.random())
-			end,
-		}
-		peripherals.bySource["test 2"] = {
-			add = function(name)
-				local window = newGraphWindow(name, 100, 80)
-				local graph = advancedTiles.addBoxBarGraph(window, 5, 15, 1, 90, 60, 0xff0000, 1, 1)
-				graph:GetBackground():SetClickable(false)
-				local sourceObject = {
-					windowID = window:GetUserdata(),
-					displays = {
-						mainGraph = graph,
-					},
-				}
-				return sourceObject
-			end,
-			update = function(name, sourceObject)
-				sourceObject.displays.mainGraph:Update(math.random())
-			end,
-		}
-		peripherals.bySource["fluid_handler"] = {
-			add = function(name)
-				local window = newGraphWindow(name, 100, 80)
-				local graph = advancedTiles.addBoxBarGraph(window, 5, 15, 1, 90, 60, 0xff0000, 1, 1)
-				graph:GetBackground():SetClickable(false)
-				local sourceObject = {
-					windowID = window:GetUserdata(),
-					displays = {
-						mainGraph = graph,
-					},
-				}
-				return sourceObject
-			end,
-			update = function(name, sourceObject)
-				local tankInfo = peripheral.call(name, "getTankInfo", "unknown")
-				if tankInfo and tankInfo[1] then
-					local percent
-					if tankInfo[1].contents then
-						percent = tankInfo[1].contents.amount / tankInfo[1].capacity
+		local peripherals = {
+			furnace = {
+				display_name = "Vanilla Furnace",
+				width = 100,
+				height = 80,
+				add = function(name, window)
+					local sourceObject = {
+						windowID = window:GetUserdata()[2],
+						displays = {
+							fuelProgress = advancedTiles.addSimpleFluidBar(window, 10, 55, 1, 20, 10, "lava", 1),
+							cookProgress = advancedTiles.addComplexBar(window, 30, 40, 1, 40, 10, 0xff0000, 1),
+							[1] = window:AddItemSlot(15, 25, 1),
+							[2] = window:AddItemSlot(15, 65, 1),
+							[3] = window:AddItemSlot(85, 45, 1),
+						},
+					}
+					sourceObject.displays.fuelProgress:SetRotation(270)
+					
+					return sourceObject
+				end,
+				update = function(name, sourceObject)
+					local curBurn = peripheral.call(name, "getBurnTime")
+					local maxBurn = peripheral.call(name, "getCurrentItemBurnTime")
+					if type(curBurn) == "number" and type(maxBurn) == "number" then
+						sourceObject.displays.fuelProgress:SetPercent(curBurn/maxBurn)
 					else
-						percent = 0
+						sourceObject.displays.fuelProgress:SetPercent(0)
+					end
+					local isCooking = peripheral.call(name, "isBurning")
+					local curCook = peripheral.call(name, "getCookTime")
+					local maxCook = 200
+					if isCooking and type(curCook) == "number" then
+						sourceObject.displays.cookProgress:SetPercent(curCook/maxCook)
+					else
+						sourceObject.displays.cookProgress:SetPercent(0)
+					end
+					
+					local items = peripheral.call(name, "getAllStacks", false)
+					for i = 1, 3 do
+						if items[i] then
+							sourceObject.displays[i]:SetItemId(items[i].id)
+							sourceObject.displays[i]:SetMeta(items[i].dmg)
+							sourceObject.displays[i]:SetAmount(items[i].qty)
+							if items[i].health_bar then
+								sourceObject.displays[i]:SetDamageBar(items[i].health_bar)
+							else
+								sourceObject.displays[i]:SetDamageBar(0)
+							end
+						else
+							sourceObject.displays[i]:SetAmount(false)
+						end
+					end
+				end,
+			},
+			tile_thermalexpansion_machine_furnace_name = {
+				display_name = "Redstone Furnace",
+				width = 100,
+				height = 80,
+				add = function(name, window)
+					local sourceObject = {
+						windowID = window:GetUserdata()[2],
+						cookProgress = 0,
+						displays = {
+							energy = advancedTiles.addComplexBar(window, 10, 70, 1, 50, 10, 0xff0000, 1),
+							cookProgress = advancedTiles.addSimpleBoxBar(window, 50, 42, 1, 20, 6, 0xffffff, 1),
+							[1] = window:AddItemSlot(40, 45, 1),
+							[2] = window:AddItemSlot(80, 45, 1),
+						},
+					}
+					sourceObject.displays.energy:SetRotation(270)
+					
+					return sourceObject
+				end,
+				update = function(name, sourceObject)
+					local curEnergy = peripheral.call(name, "getEnergyInfo")
+					local maxEnergy = peripheral.call(name, "getMaxEnergyInfo")
+					if type(curEnergy) == "number" and type(maxEnergy) == "number" then
+						sourceObject.displays.energy:SetPercent(curEnergy/maxEnergy)
+					else
+						sourceObject.displays.energy:SetPercent(0)
+					end
+
+					local hasWork = peripheral.call(name, "hasWork")
+					local energyPerTick = peripheral.call(name, "getEnergyPerTickInfo")
+					if hasWork and type(energyPerTick) == "number" and energyPerTick > 0 then
+						sourceObject.cookProgress = (sourceObject.cookProgress + 1) % 5
+						sourceObject.displays.cookProgress:SetPercent(sourceObject.cookProgress/4)
+					else
+						sourceObject.displays.cookProgress:SetPercent(0)
+					end
+
+					local items = peripheral.call(name, "getAllStacks", false)
+					for i = 1, 2 do
+						if items[i] then
+							sourceObject.displays[i]:SetItemId(items[i].id)
+							sourceObject.displays[i]:SetMeta(items[i].dmg)
+							sourceObject.displays[i]:SetAmount(items[i].qty)
+							if items[i].health_bar then
+								sourceObject.displays[i]:SetDamageBar(items[i].health_bar)
+							else
+								sourceObject.displays[i]:SetDamageBar(0)
+							end
+						else
+							sourceObject.displays[i]:SetAmount(false)
+						end
+					end
+				end,
+			},
+		}
+		for peripheralType, peripheralData in pairs(peripherals) do
+		
+			local name = peripheralData.display_name or peripheralType
+		
+			peripheralData.list = {}
+			
+			peripheralData.listWindow = guiTiles.newBasicWindow(peripheralTypes.listWindow:AddSubTile(155, 0, 1), 150, 80)
+			peripheralData.listWindow:SetVisible(false)
+			peripheralData.listWindow:SetClickable(false)
+			
+			peripheralData.listWindow:AddFancyText(6, 6, 1, textToSize(name, 138), 0x000000, 1)
+			
+			local function onListSelect(index, name)
+				peripheralData.listObject:SetSelected(false, true)
+				peripheralData.listObject:SetHighlighted(false, true)
+				local windowID = peripheralData.list[name].windowID
+				if windowID then
+					local window = windowHandler:GetWindow(windowID)
+					if window then
+						windowHandler:ToFront(windowID)
+						if not window:GetDrawn() then
+							window:SetDrawn(true)
+						else
+							window:SetX(-(window:GetWidth()/2))
+							window:SetY(-(window:GetHeight()/2))
+						end
+					end
+				end
+			end
+			peripheralData.listObject = peripheralData.listWindow:AddList(5, 25, 1, 140, 50, onListSelect, {})
+			
+			peripheralTypes.listObject:AddItem(1, {peripheralType, name})
+			
+			peripheralTypes.list[peripheralType] = peripheralData
+		end
+		
+		local sources = {
+			rf_receiver = {
+				width = 100,
+				height = 80,
+				add = function(name, window)
+					local graph = advancedTiles.addBoxBarGraph(window, 5, 15, 1, 90, 60, 0xff0000, 1, 1)
+					graph:GetBackground():SetClickable(false)
+					local sourceObject = {
+						windowID = window:GetUserdata()[2],
+						displays = {
+							mainGraph = graph,
+						},
+					}
+					return sourceObject
+				end,
+				update = function(name, sourceObject)
+					local curEnergy = peripheral.call(name, "getEnergyStored", "unknown")
+					local maxEnergy = peripheral.call(name, "getMaxEnergyStored", "unknown")
+					local percent = 0
+					if type(curEnergy) == "number" and type(maxEnergy) == "number" then
+						percent = curEnergy / maxEnergy
 					end
 					sourceObject.displays.mainGraph:Update(percent)
-				end
-			end,
-		}
-		peripherals.bySource["rf_receiver"] = {
-			add = function(name)
-				local window = newGraphWindow(name, 100, 80)
-				local graph = advancedTiles.addBoxBarGraph(window, 5, 15, 1, 90, 60, 0xff0000, 1, 1)
-				graph:GetBackground():SetClickable(false)
-				local sourceObject = {
-					windowID = window:GetUserdata(),
-					displays = {
-						mainGraph = graph,
-					},
-				}
-				return sourceObject
-			end,
-			update = function(name, sourceObject)
-				local curEnergy = peripheral.call(name, "getEnergyStored", "unknown")
-				local maxEnergy = peripheral.call(name, "getMaxEnergyStored", "unknown")
-				local percent = 0
-				if type(curEnergy) == "number" and type(maxEnergy) == "number" then
-					percent = curEnergy / maxEnergy
-				end
-				sourceObject.displays.mainGraph:Update(percent)
-			end,
-		}
-		peripherals.bySource["vanilla_furnace"] = {
-			add = function(name)
-				local window = newGraphWindow(name, 100, 80)
-				
-				local sourceObject = {
-					windowID = window:GetUserdata(),
-					displays = {
-						fuelProgress = advancedTiles.addSimpleFluidBar(window, 10, 50, 1, 10, 10, "lava", 1, 0.5),
-						cookProgress = advancedTiles.addComplexBar(window, 30, 40, 1, 40, 10, 0xff0000, 1),
-						[1] = window:AddItemSlot(15, 30, 1),
-						[2] = window:AddItemSlot(15, 60, 1),
-						[3] = window:AddItemSlot(85, 45, 1),
-					},
-				}
-				sourceObject.displays.fuelProgress:SetRotation(270)
-				
-				return sourceObject
-			end,
-			update = function(name, sourceObject)
-				local curBurn = peripheral.call(name, "getBurnTime")
-				local maxBurn = peripheral.call(name, "getCurrentItemBurnTime")
-				if type(curBurn) == "number" and type(maxBurn) == "number" then
-					sourceObject.displays.fuelProgress:SetPercent(curBurn/maxBurn)
-				else
-					sourceObject.displays.fuelProgress:SetPercent(0)
-				end
-				local isCooking = peripheral.call(name, "isBurning")
-				local curCook = peripheral.call(name, "getCookTime")
-				local maxCook = 200
-				if isCooking and type(curCook) == "number" then
-					sourceObject.displays.cookProgress:SetPercent(curCook/maxCook)
-				else
-					sourceObject.displays.cookProgress:SetPercent(0)
-				end
-				
-				local items = peripheral.call(name, "getAllStacks", false)
-				for i = 1, 3 do
-					if items[i] then
-						sourceObject.displays[i]:SetItemId(items[i].id)
-						sourceObject.displays[i]:SetMeta(items[i].dmg)
-						sourceObject.displays[i]:SetAmount(items[i].qty)
-						if items[i].health_bar then
-							sourceObject.displays[i]:SetDamageBar(items[i].health_bar)
+				end,
+			},
+			fluid_handler = {
+				width = 100,
+				height = 80,
+				add = function(name, window)
+					local graph = advancedTiles.addBoxBarGraph(window, 5, 15, 1, 90, 60, 0xff0000, 1, 1)
+					graph:GetBackground():SetClickable(false)
+					local sourceObject = {
+						windowID = window:GetUserdata()[2],
+						displays = {
+							mainGraph = graph,
+						},
+					}
+					return sourceObject
+				end,
+				update = function(name, sourceObject)
+					local tankInfo = peripheral.call(name, "getTankInfo", "unknown")
+					if tankInfo and tankInfo[1] then
+						local percent
+						if tankInfo[1].contents then
+							percent = tankInfo[1].contents.amount / tankInfo[1].capacity
 						else
-							sourceObject.displays[i]:SetDamageBar(0)
+							percent = 0
 						end
-					else
-						sourceObject.displays[i]:SetAmount(false)
+						sourceObject.displays.mainGraph:Update(percent)
 					end
-				end
-			end,
+				end,
+			},
 		}
+		for sourceType, sourceData in pairs(sources) do
 		
-		for sourceName, sourceData in pairs(peripherals.bySource) do
+			local name = sourceData.display_name or sourceType
+		
 			sourceData.list = {}
 			
-			sourceData.listWindow = guiTiles.newBasicWindow(surfaceHandler:AddTile(165, 10, 1), 150, 80)
+			sourceData.listWindow = guiTiles.newBasicWindow(sourceTypes.listWindow:AddSubTile(155, 0, 1), 150, 80)
 			sourceData.listWindow:SetVisible(false)
 			sourceData.listWindow:SetClickable(false)
 			
-			sourceData.listWindow:AddFancyText(6, 6, 1, sourceName, 0x000000, 1)
+			sourceData.listWindow:AddFancyText(6, 6, 1, textToSize(name, 138), 0x000000, 1)
 			
 			local function onListSelect(index, name)
+				sourceData.listObject:SetSelected(false, true)
+				sourceData.listObject:SetHighlighted(false, true)
 				local windowID = sourceData.list[name].windowID
 				if windowID then
-					local window = windows.list[windowID]
+					local window = windowHandler:GetWindow(windowID)
 					if window then
-						windows.toFront(windowID)
-						window:SetDrawn(true)
+						windowHandler:ToFront(windowID)
+						if not window:GetDrawn() then
+							window:SetDrawn(true)
+						else
+							window:SetX(-(window:GetWidth()/2))
+							window:SetY(-(window:GetHeight()/2))
+						end
 					end
 				end
 			end
 			sourceData.listObject = sourceData.listWindow:AddList(5, 25, 1, 140, 50, onListSelect, {})
 			
-			peripherals.listObject:AddItem(1, sourceName)
+			sourceTypes.listObject:AddItem(1, {sourceType, name})
+			
+			sourceTypes.list[sourceType] = sourceData
 		end
 
 		local waiting = false
 		local function update()
 			while true do
-				for sourceName, sourceData in pairs(peripherals.bySource) do
-					for name, sourceObject in pairs(sourceData.list) do
-						sourceData.update(name, sourceObject)
+				for _, peripheralData in pairs(peripheralTypes.list) do
+					for name, object in pairs(peripheralData.list) do
+						peripheralData.update(name, object)
+					end
+				end
+				for _, sourceData in pairs(sourceTypes.list) do
+					for name, object in pairs(sourceData.list) do
+						sourceData.update(name, object)
 					end
 				end
 				waiting = true
@@ -343,64 +444,50 @@ local function newPlayerHandler(playerUUID, surfaceHandler)
 		end
 		local updateRoutine = coroutine.create(update)
 		
+		local function checkPeripheral(peripheralName)
+			local peripheralType = peripheral.getType(peripheralName)
+			if peripheralTypes.list[peripheralType] then
+				print("peripheral = ", peripheralType, ", name = ", peripheralName)
+				peripheralTypes.add(peripheralType, peripheralName)
+			end
+			
+			local methods = peripheral.getMethods(peripheralName)
+			for _, method in ipairs(methods) do
+				if method == "listSources" then
+					local sources = peripheral.call(peripheralName, "listSources")
+					if sources then
+						for sourceType, _ in pairs(sources) do
+							if sourceTypes.list[sourceType] then
+								print("source = ", sourceType, ", name = ", peripheralName)
+								sourceTypes.add(sourceType, peripheralName)
+							end
+						end
+					end
+					break
+				end
+			end
+		end
+
 		do -- main
 			-- initial peripheral discovery
 			for _, name in pairs(peripheral.getNames()) do
-				local methods = peripheral.getMethods(name)
-				for _, method in ipairs(methods) do
-					if method == "listSources" then
-						local sources = peripheral.call(name, "listSources")
-						if sources then
-							for source, _ in pairs(sources) do
-								if peripherals.bySource[source] then
-									print("source = ", source, ", name = ", name)
-									peripherals.add(source, name)
-								end
-							end
-						end
-						break
-					end
-				end
+				checkPeripheral(name)
 			end		
 
-			peripherals.listWindow:SetDrawn(true)
-			for _, sourceData in pairs(peripherals.bySource) do
-				sourceData.listWindow:SetDrawn(true)
-			end
-			
-			peripherals.add("test", "test_object")
-			peripherals.add("test 2", "test_object_2")
-			--[[
-			local window1 = newGraphWindow("window1", 90, 40)
-			window1:SetColor(math.random(0, 16777215))
-			window1:SetDrawn(true)
-			local window2 = newGraphWindow("window2", 0, 0)
-			window2:SetColor(math.random(0, 16777215))
-			window2:SetDrawn(true)
-			]]
-			
-			--local UPDATE_INTERVAL = 5
-			--local updateTimer = os.startTimer(UPDATE_INTERVAL)
+			selectionWindow:SetDrawn(true)
+
 			local nullClickTime, nullClickButton = -math.huge, false
 			while true do
 				local event = {os.pullEvent()}
 				guiHandler:HandleEvent(event)
 				if event[1] == "glasses_capture" then
-					peripherals.listWindow:SetVisible(true)
-					if peripherals.selectedSourceList then
-						peripherals.selectedSourceList:SetVisible(true)
-						peripherals.selectedSourceList:SetClickable(true)
-					end
-					for _, window in pairs(windows.list) do
+					selectionWindow:SetVisible(true)
+					for _, window in pairs(windowHandler:GetAllWindows()) do
 						window:SetOpacity(1)
 					end
 				elseif event[1] == "glasses_release" then
-					peripherals.listWindow:SetVisible(false)
-					if peripherals.selectedSourceList then
-						peripherals.selectedSourceList:SetVisible(false)
-						peripherals.selectedSourceList:SetClickable(false)
-					end
-					for _, window in pairs(windows.list) do
+					selectionWindow:SetVisible(false)
+					for _, window in pairs(windowHandler:GetAllWindows()) do
 						window:SetOpacity(0.75)
 					end
 				elseif event[1] == "glasses_mouse_down" then
@@ -414,19 +501,27 @@ local function newPlayerHandler(playerUUID, surfaceHandler)
 							end
 						elseif nullClickButton == 1 then
 							-- reset window positions to centre of the screen
-							for _, window in pairs(windows.list) do
+							for _, window in pairs(windowHandler:GetAllWindows()) do
 								window:SetX(-(window:GetWidth()/2))
 								window:SetY(-(window:GetHeight()/2))
 							end
 						end
 						nullClickTime, nullClickButton = -math.huge, false
 					else
-						if event[5] == 0 then
-							if peripherals.selectedSourceList then
-								peripherals.selectedSourceList:SetVisible(false)
-								peripherals.selectedSourceList:SetClickable(false)
-								peripherals.selectedSourceList = false
-								peripherals.listObject:SetSelected(false, true)
+						if event[5] == 1 then
+							if peripheralTypes.listWindow:GetVisible() and peripheralTypes.selectedTypeList then
+								peripheralTypes.selectedTypeList:SetVisible(false)
+								peripheralTypes.selectedTypeList:SetClickable(false)
+								peripheralTypes.selectedTypeList = false
+							elseif sourceTypes.listWindow:GetVisible() and sourceTypes.selectedTypeList then
+								sourceTypes.selectedTypeList:SetVisible(false)
+								sourceTypes.selectedTypeList:SetClickable(false)
+								sourceTypes.selectedTypeList = false
+							else
+								peripheralTypes.listWindow:SetVisible(false)
+								peripheralTypes.listWindow:SetClickable(false)
+								sourceTypes.listWindow:SetVisible(false)
+								sourceTypes.listWindow:SetClickable(false)
 							end
 						end
 					end
