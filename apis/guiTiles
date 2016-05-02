@@ -557,6 +557,7 @@ do
 				end
 				
 				if not noUpdate and self.onHighlightedChanged then
+					self.onHighlightedChanged(index, index and unpack(self.items[index]))
 				end
 				
 				-- update highlighted value
