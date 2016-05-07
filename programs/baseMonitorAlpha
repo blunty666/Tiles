@@ -11,6 +11,7 @@ local requiredAPIs = {
 	"tiles",
 	"guiTiles",
 	"advancedTiles",
+	"remotePeripheralClient",
 }
 
 for _, apiName in ipairs(requiredAPIs) do
@@ -29,6 +30,8 @@ local function textToSize(text, width)
 	end
 	return text
 end
+
+local remotePeripherals = remotePeripheralClient.new()
 
 local function newPlayerHandler(playerUUID, surfaceHandler)
 	return function()
@@ -124,12 +127,15 @@ local function newPlayerHandler(playerUUID, surfaceHandler)
 			end
 			peripheralTypes.remove = function(peripheralType, name)
 				local object = peripheralTypes.list[peripheralType].list[name]
-				windowHandler:Delete(object.windowID)
-				for index, itemName in ipairs(peripheralTypes.list[peripheralType].listObject.items) do
-					if itemName[1] == name then
-						peripheralTypes.list[peripheralType].listObject:RemoveItem(index)
-						break
+				if object then
+					windowHandler:Delete(object.windowID)
+					for index, itemName in ipairs(peripheralTypes.list[peripheralType].listObject.items) do
+						if itemName[1] == name then
+							peripheralTypes.list[peripheralType].listObject:RemoveItem(index)
+							break
+						end
 					end
+					peripheralTypes.list[peripheralType].list[name] = nil
 				end
 			end
 		end
@@ -180,12 +186,15 @@ local function newPlayerHandler(playerUUID, surfaceHandler)
 			end
 			sourceTypes.remove = function(sourceType, name)
 				local sourceObject = sourceTypes.list[sourceType].list[name]
-				windowHandler:Delete(sourceObject.windowID)
-				for index, itemName in ipairs(sourceTypes.list[sourceType].listObject.items) do
-					if itemName[1] == name then
-						sourceTypes.list[sourceType].listObject:RemoveItem(index)
-						break
+				if sourceObject then
+					windowHandler:Delete(sourceObject.windowID)
+					for index, itemName in ipairs(sourceTypes.list[sourceType].listObject.items) do
+						if itemName[1] == name then
+							sourceTypes.list[sourceType].listObject:RemoveItem(index)
+							break
+						end
 					end
+					sourceTypes.list[sourceType].list[name] = nil
 				end
 			end
 		end
@@ -211,25 +220,33 @@ local function newPlayerHandler(playerUUID, surfaceHandler)
 					return sourceObject
 				end,
 				update = function(name, sourceObject)
-					local curBurn = peripheral.call(name, "getBurnTime")
-					local maxBurn = peripheral.call(name, "getCurrentItemBurnTime")
+					local curBurn, maxBurn
+					local isCooking, curCook
+					local maxCook = 200
+					local furnaceData = remotePeripherals:GetSourceData(name, "vanilla_furnace")
+					if furnaceData then
+						curBurn, maxBurn = furnaceData.getBurnTime, furnaceData.getCurrentItemBurnTime
+						isCooking, curCook = furnaceData.isBurning, furnaceData.getCookTime
+					end
+					
 					if type(curBurn) == "number" and type(maxBurn) == "number" then
 						sourceObject.displays.fuelProgress:SetPercent(curBurn/maxBurn)
 					else
 						sourceObject.displays.fuelProgress:SetPercent(0)
 					end
-					local isCooking = peripheral.call(name, "isBurning")
-					local curCook = peripheral.call(name, "getCookTime")
-					local maxCook = 200
 					if isCooking and type(curCook) == "number" then
 						sourceObject.displays.cookProgress:SetPercent(curCook/maxCook)
 					else
 						sourceObject.displays.cookProgress:SetPercent(0)
 					end
 					
-					local items = peripheral.call(name, "getAllStacks", false)
+					local items
+					local itemData = remotePeripherals:GetSourceData(name, "inventory")
+					if itemData then
+						items = itemData.getAllStacks
+					end
 					for i = 1, 3 do
-						if items[i] then
+						if items and items[i] then
 							sourceObject.displays[i]:SetItemId(items[i].id)
 							sourceObject.displays[i]:SetMeta(items[i].dmg)
 							sourceObject.displays[i]:SetAmount(items[i].qty)
@@ -264,26 +281,35 @@ local function newPlayerHandler(playerUUID, surfaceHandler)
 					return sourceObject
 				end,
 				update = function(name, sourceObject)
-					local curEnergy = peripheral.call(name, "getEnergyInfo")
-					local maxEnergy = peripheral.call(name, "getMaxEnergyInfo")
+					local curEnergy, maxEnergy
+					local energyPerTick
+					local rfData = remotePeripherals:GetSourceData(name, "rf_info")
+					if rfData then
+						curEnergy = rfData.getEnergyInfo
+						maxEnergy = rfData.getMaxEnergyInfo
+						energyPerTick = rfData.getEnergyPerTickInfo
+					end
+
 					if type(curEnergy) == "number" and type(maxEnergy) == "number" then
 						sourceObject.displays.energy:SetPercent(curEnergy/maxEnergy)
 					else
 						sourceObject.displays.energy:SetPercent(0)
 					end
 
-					local hasWork = peripheral.call(name, "hasWork")
-					local energyPerTick = peripheral.call(name, "getEnergyPerTickInfo")
-					if hasWork and type(energyPerTick) == "number" and energyPerTick > 0 then
+					if type(energyPerTick) == "number" and energyPerTick > 0 then
 						sourceObject.cookProgress = (sourceObject.cookProgress + 1) % 5
 						sourceObject.displays.cookProgress:SetPercent(sourceObject.cookProgress/4)
 					else
 						sourceObject.displays.cookProgress:SetPercent(0)
 					end
-
-					local items = peripheral.call(name, "getAllStacks", false)
+					
+					local items
+					local itemData = remotePeripherals:GetSourceData(name, "inventory")
+					if itemData then
+						items = itemData.getAllStacks
+					end
 					for i = 1, 2 do
-						if items[i] then
+						if items and items[i] then
 							sourceObject.displays[i]:SetItemId(items[i].id)
 							sourceObject.displays[i]:SetMeta(items[i].dmg)
 							sourceObject.displays[i]:SetAmount(items[i].qty)
@@ -314,7 +340,7 @@ local function newPlayerHandler(playerUUID, surfaceHandler)
 			local function onListSelect(index, name)
 				peripheralData.listObject:SetSelected(false, true)
 				peripheralData.listObject:SetHighlighted(false, true)
-				local windowID = peripheralData.list[name].windowID
+				local windowID = peripheralData.list[name] and peripheralData.list[name].windowID
 				if windowID then
 					local window = windowHandler:GetWindow(windowID)
 					if window then
@@ -347,15 +373,19 @@ local function newPlayerHandler(playerUUID, surfaceHandler)
 						displays = {
 							mainGraph = graph,
 						},
+						backgroundUpdate = true,
 					}
 					return sourceObject
 				end,
 				update = function(name, sourceObject)
-					local curEnergy = peripheral.call(name, "getEnergyStored", "unknown")
-					local maxEnergy = peripheral.call(name, "getMaxEnergyStored", "unknown")
 					local percent = 0
-					if type(curEnergy) == "number" and type(maxEnergy) == "number" then
-						percent = curEnergy / maxEnergy
+					local data = remotePeripherals:GetSourceData(name, "rf_receiver")
+					if data then
+						local curEnergy = data.getEnergyStored
+						local maxEnergy = data.getMaxEnergyStored
+						if type(curEnergy) == "number" and type(maxEnergy) == "number" then
+							percent = curEnergy / maxEnergy
+						end
 					end
 					sourceObject.displays.mainGraph:Update(percent)
 				end,
@@ -371,20 +401,22 @@ local function newPlayerHandler(playerUUID, surfaceHandler)
 						displays = {
 							mainGraph = graph,
 						},
+						backgroundUpdate = true,
 					}
 					return sourceObject
 				end,
 				update = function(name, sourceObject)
-					local tankInfo = peripheral.call(name, "getTankInfo", "unknown")
-					if tankInfo and tankInfo[1] then
-						local percent
-						if tankInfo[1].contents then
-							percent = tankInfo[1].contents.amount / tankInfo[1].capacity
-						else
-							percent = 0
+					local percent = 0
+					local data = remotePeripherals:GetSourceData(name, "fluid_handler")
+					if data then
+						local tankInfo = data.getTankInfo
+						if tankInfo and tankInfo[1] then
+							if tankInfo[1].contents then
+								percent = tankInfo[1].contents.amount / tankInfo[1].capacity
+							end
 						end
-						sourceObject.displays.mainGraph:Update(percent)
 					end
+					sourceObject.displays.mainGraph:Update(percent)
 				end,
 			},
 		}
@@ -397,13 +429,13 @@ local function newPlayerHandler(playerUUID, surfaceHandler)
 			sourceData.listWindow = guiTiles.newBasicWindow(sourceTypes.listWindow:AddSubTile(155, 0, 1), 150, 80)
 			sourceData.listWindow:SetVisible(false)
 			sourceData.listWindow:SetClickable(false)
-			
+
 			sourceData.listWindow:AddFancyText(6, 6, 1, textToSize(name, 138), 0x000000, 1)
-			
+
 			local function onListSelect(index, name)
 				sourceData.listObject:SetSelected(false, true)
 				sourceData.listObject:SetHighlighted(false, true)
-				local windowID = sourceData.list[name].windowID
+				local windowID = sourceData.list[name] and sourceData.list[name].windowID
 				if windowID then
 					local window = windowHandler:GetWindow(windowID)
 					if window then
@@ -424,58 +456,44 @@ local function newPlayerHandler(playerUUID, surfaceHandler)
 			sourceTypes.list[sourceType] = sourceData
 		end
 
-		local waiting = false
-		local function update()
+		local function peripheralChecker()
 			while true do
-				for _, peripheralData in pairs(peripheralTypes.list) do
-					for name, object in pairs(peripheralData.list) do
-						peripheralData.update(name, object)
+				local eventType, peripheralName = os.pullEvent()
+				if eventType == "remote_peripheral_add" then
+					print("adding peripheral = ", peripheralName)
+					local peripheralData = remotePeripherals:GetAllData(peripheralName)
+					if peripheralTypes.list[peripheralData.type] then
+						peripheralTypes.add(peripheralData.type, peripheralName)
 					end
-				end
-				for _, sourceData in pairs(sourceTypes.list) do
-					for name, object in pairs(sourceData.list) do
-						sourceData.update(name, object)
-					end
-				end
-				waiting = true
-				sleep(1)
-				waiting = false
-			end
-		end
-		local updateRoutine = coroutine.create(update)
-		
-		local function checkPeripheral(peripheralName)
-			local peripheralType = peripheral.getType(peripheralName)
-			if peripheralTypes.list[peripheralType] then
-				print("peripheral = ", peripheralType, ", name = ", peripheralName)
-				peripheralTypes.add(peripheralType, peripheralName)
-			end
-			
-			local methods = peripheral.getMethods(peripheralName)
-			for _, method in ipairs(methods) do
-				if method == "listSources" then
-					local sources = peripheral.call(peripheralName, "listSources")
-					if sources then
-						for sourceType, _ in pairs(sources) do
-							if sourceTypes.list[sourceType] then
-								print("source = ", sourceType, ", name = ", peripheralName)
-								sourceTypes.add(sourceType, peripheralName)
+					if peripheralData.sources then
+						for source, _ in pairs(peripheralData.sources) do
+							if sourceTypes.list[source] then
+								sourceTypes.add(source, peripheralName)
 							end
 						end
 					end
-					break
+				elseif eventType == "remote_peripheral_remove" then
+					for peripheralType, peripheralTypeData in pairs(peripheralTypes.list) do
+						if peripheralTypeData.list[peripheralName] then
+							peripheralTypes.remove(peripheralType, peripheralName)
+						end
+					end
+					for sourceType, sourceTypeData in pairs(sourceTypes.list) do
+						if sourceTypeData.list[peripheralName] then
+							sourceTypes.remove(sourceType, peripheralName)
+						end
+					end
 				end
 			end
 		end
 
-		do -- main
-			-- initial peripheral discovery
-			for _, name in pairs(peripheral.getNames()) do
-				checkPeripheral(name)
-			end		
+		local function main()
 
 			selectionWindow:SetDrawn(true)
 
+			local UPDATE_INTERVAL = 1
+			
+			local updateTimer = os.startTimer(0)
 			local nullClickTime, nullClickButton = -math.huge, false
 			while true do
 				local event = {os.pullEvent()}
@@ -527,22 +545,32 @@ local function newPlayerHandler(playerUUID, surfaceHandler)
 					end
 					nullClickTime = newClickTime
 					nullClickButton = event[5]
-				elseif event[1] == "timer" and waiting then
-					local ok, err = coroutine.resume(updateRoutine, unpack(event))
-					if not ok then
-						printError(err)
+				elseif event[1] == "timer" and event[2] == updateTimer then
+					for _, peripheralData in pairs(peripheralTypes.list) do
+						for name, object in pairs(peripheralData.list) do
+							local window = windowHandler:GetWindow(object.windowID)
+							if object.backgroundUpdate or (window and window:GetDrawn()) then
+								peripheralData.update(name, object)
+							end
+						end
 					end
-				elseif event[1] == "task_complete" and not waiting then
-					local ok, err = coroutine.resume(updateRoutine, unpack(event))
-					if not ok then
-						printError(err)
+					for _, sourceData in pairs(sourceTypes.list) do
+						for name, object in pairs(sourceData.list) do
+							local window = windowHandler:GetWindow(object.windowID)
+							if object.backgroundUpdate or (window and window:GetDrawn()) then
+								sourceData.update(name, object)
+							end
+						end
 					end
+					updateTimer = os.startTimer(UPDATE_INTERVAL)
 				end
 			end
 		end
+		
+		parallel.waitForAny(main, peripheralChecker)
 	end
 end
 
 local handler = tiles.newMultiSurfaceHandler(bridge, newPlayerHandler)
 
-handler:Run()
+parallel.waitForAny(function() handler:Run() end, function() remotePeripherals:Run() end)
