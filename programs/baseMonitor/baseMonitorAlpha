@@ -154,10 +154,9 @@ local function newGraphWindow(windowHandler, surfaceHandler, uniqueID, width, he
 	expansionWindow:SetClickable(false)
 
 	local mainText = window:AddText(1, 1, textToSize(configName, width - 10), 0x000000)
-	mainText:SetZ(2)
+	mainText:SetZ(1)
 	mainText:SetClickable(false)
 	local textBackground = window:AddBox(1, 1, width - 9, 8, 0xffffff, 1)
-	textBackground:SetZ(1)
 	textBackground:SetVisible(false)
 	textBackground:SetOnClick(
 		function(object, button)
@@ -178,7 +177,7 @@ local function newGraphWindow(windowHandler, surfaceHandler, uniqueID, width, he
 		expansionWindow:SetVisible(false)
 		expansionWindow:SetClickable(false)
 	end
-	textBox = expansionWindow:AddTextBox(0, 0, 1, 100, textBoxSubmit)
+	textBox = expansionWindow:AddTextBox(0, 0, 0, 100, textBoxSubmit)
 	textBox.background:SetVisible(false)
 	textBox:SetText(configName)
 	textBox:SetOnDeselect(function() textBoxSubmit(textBox:GetText()) end)
@@ -199,11 +198,11 @@ local function newPlayerHandler(playerUUID, surfaceHandler)
 		local userConfig = initConfig(fs.combine(configPath, playerUUID))
 		userConfig:Load()
 		
-		local selectionWindow = guiTiles.newBasicWindow(surfaceHandler:AddTile(10, 10, 1), 80, 50)
+		local selectionWindow = guiTiles.newBasicWindow(surfaceHandler:AddTile(10, 10, 2), 80, 50)
 		local peripheralTypes = {}
 		local sourceTypes = {}
 		
-		local peripheralButton = selectionWindow:AddButton(10, 10, 1, "Peripherals", 0x7fcc19, 0x000000, 0x57a64e, 0x000000)
+		local peripheralButton = selectionWindow:AddButton(10, 10, 0, "Peripherals", 0x7fcc19, 0x000000, 0x57a64e, 0x000000)
 		peripheralButton:SetOnRelease(
 			function()
 				sourceTypes.listWindow:SetVisible(false)
@@ -212,7 +211,7 @@ local function newPlayerHandler(playerUUID, surfaceHandler)
 				peripheralTypes.listWindow:SetClickable(true)
 			end
 		)
-		local sourceButton = selectionWindow:AddButton(17, 30, 1, "Sources", 0x7fcc19, 0x000000, 0x57a64e, 0x000000)
+		local sourceButton = selectionWindow:AddButton(17, 30, 0, "Sources", 0x7fcc19, 0x000000, 0x57a64e, 0x000000)
 		sourceButton:SetOnRelease(
 			function()
 				peripheralTypes.listWindow:SetVisible(false)
@@ -226,10 +225,10 @@ local function newPlayerHandler(playerUUID, surfaceHandler)
 			peripheralTypes.list = {}
 			peripheralTypes.selectedTypeList = false
 			
-			peripheralTypes.listWindow = guiTiles.newBasicWindow(selectionWindow:AddSubTile(selectionWindow:GetWidth() + 5, 0, 1), 150, 80)
+			peripheralTypes.listWindow = guiTiles.newBasicWindow(selectionWindow:AddSubTile(selectionWindow:GetWidth() + 5, 0, 0), 150, 80)
 			peripheralTypes.listWindow:SetVisible(false)
 			peripheralTypes.listWindow:SetClickable(false)
-			peripheralTypes.listWindow:AddFancyText(6, 6, 1, "Peripherals", 0x000000, 1)
+			peripheralTypes.listWindow:AddFancyText(6, 6, 0, "Peripherals", 0x000000, 1)
 			
 			local function onListSelect(index, peripheralType)
 				if peripheralTypes.selectedTypeList then
@@ -243,7 +242,7 @@ local function newPlayerHandler(playerUUID, surfaceHandler)
 					peripheralTypes.selectedTypeList = sourceList
 				end
 			end
-			peripheralTypes.listObject = peripheralTypes.listWindow:AddList(5, 25, 1, 140, 50, onListSelect, {})
+			peripheralTypes.listObject = peripheralTypes.listWindow:AddList(5, 25, 0, 140, 50, onListSelect, {})
 			
 			peripheralTypes.add = function(peripheralType, name)
 				local peripheralData = peripheralTypes.list[peripheralType]
@@ -292,10 +291,10 @@ local function newPlayerHandler(playerUUID, surfaceHandler)
 			sourceTypes.list = {}
 			sourceTypes.selectedTypeList = false
 			
-			sourceTypes.listWindow = guiTiles.newBasicWindow(selectionWindow:AddSubTile(selectionWindow:GetWidth() + 5, 0, 1), 150, 80)
+			sourceTypes.listWindow = guiTiles.newBasicWindow(selectionWindow:AddSubTile(selectionWindow:GetWidth() + 5, 0, 0), 150, 80)
 			sourceTypes.listWindow:SetVisible(false)
 			sourceTypes.listWindow:SetClickable(false)
-			sourceTypes.listWindow:AddFancyText(6, 6, 1, "Sources", 0x000000, 1)
+			sourceTypes.listWindow:AddFancyText(6, 6, 0, "Sources", 0x000000, 1)
 			
 			local function onListSelect(index, sourceType)
 				if sourceTypes.selectedTypeList then
@@ -309,7 +308,7 @@ local function newPlayerHandler(playerUUID, surfaceHandler)
 					sourceTypes.selectedTypeList = sourceList
 				end
 			end
-			sourceTypes.listObject = sourceTypes.listWindow:AddList(5, 25, 1, 140, 50, onListSelect, {})
+			sourceTypes.listObject = sourceTypes.listWindow:AddList(5, 25, 0, 140, 50, onListSelect, {})
 			
 			sourceTypes.add = function(sourceType, name)
 				local sourceData = sourceTypes.list[sourceType]
@@ -362,11 +361,11 @@ local function newPlayerHandler(playerUUID, surfaceHandler)
 		
 			peripheralData.list = {}
 			
-			peripheralData.listWindow = guiTiles.newBasicWindow(peripheralTypes.listWindow:AddSubTile(155, 0, 1), 150, 80)
+			peripheralData.listWindow = guiTiles.newBasicWindow(peripheralTypes.listWindow:AddSubTile(155, 0, 0), 150, 80)
 			peripheralData.listWindow:SetVisible(false)
 			peripheralData.listWindow:SetClickable(false)
 			
-			peripheralData.listWindow:AddFancyText(6, 6, 1, textToSize(name, 138), 0x000000, 1)
+			peripheralData.listWindow:AddFancyText(6, 6, 0, textToSize(name, 138), 0x000000, 1)
 			
 			local function onListSelect(index, name)
 				peripheralData.listObject:SetSelected(false, true)
@@ -385,7 +384,7 @@ local function newPlayerHandler(playerUUID, surfaceHandler)
 					end
 				end
 			end
-			peripheralData.listObject = peripheralData.listWindow:AddList(5, 25, 1, 140, 50, onListSelect, {})
+			peripheralData.listObject = peripheralData.listWindow:AddList(5, 25, 0, 140, 50, onListSelect, {})
 			
 			peripheralTypes.listObject:AddItem(1, {peripheralType, name})
 			
@@ -398,11 +397,11 @@ local function newPlayerHandler(playerUUID, surfaceHandler)
 		
 			sourceData.list = {}
 			
-			sourceData.listWindow = guiTiles.newBasicWindow(sourceTypes.listWindow:AddSubTile(155, 0, 1), 150, 80)
+			sourceData.listWindow = guiTiles.newBasicWindow(sourceTypes.listWindow:AddSubTile(155, 0, 0), 150, 80)
 			sourceData.listWindow:SetVisible(false)
 			sourceData.listWindow:SetClickable(false)
 
-			sourceData.listWindow:AddFancyText(6, 6, 1, textToSize(name, 138), 0x000000, 1)
+			sourceData.listWindow:AddFancyText(6, 6, 0, textToSize(name, 138), 0x000000, 1)
 
 			local function onListSelect(index, name)
 				sourceData.listObject:SetSelected(false, true)
@@ -421,7 +420,7 @@ local function newPlayerHandler(playerUUID, surfaceHandler)
 					end
 				end
 			end
-			sourceData.listObject = sourceData.listWindow:AddList(5, 25, 1, 140, 50, onListSelect, {})
+			sourceData.listObject = sourceData.listWindow:AddList(5, 25, 0, 140, 50, onListSelect, {})
 			
 			sourceTypes.listObject:AddItem(1, {sourceType, name})
 			

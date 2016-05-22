@@ -9,10 +9,10 @@ return {
 			windowID = window:GetUserdata()[2],
 			cookProgress = 0,
 			displays = {
-				energy = advancedTiles.addComplexBar(window, 10, 70, 1, 50, 10, 0xff0000, 1),
-				cookProgress = advancedTiles.addSimpleBoxBar(window, 50, 42, 1, 20, 6, 0xffffff, 1),
-				[1] = window:AddItemSlot(40, 45, 1),
-				[2] = window:AddItemSlot(80, 45, 1),
+				energy = advancedTiles.addComplexBar(window, 10, 70, 0, 50, 10, 0xff0000, 1),
+				cookProgress = advancedTiles.addSimpleBoxBar(window, 50, 42, 0, 20, 6, 0xffffff, 1),
+				[1] = window:AddItemSlot(40, 45, 0),
+				[2] = window:AddItemSlot(80, 45, 0),
 			},
 		}
 		sourceObject.displays.energy:SetRotation(270)

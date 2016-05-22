@@ -12,58 +12,46 @@ return {
 	width = 170,
 	height = 200,
 	add = function(name, window)
-		local fuelBar = advancedTiles.addComplexBar(window, 10, 100, 1, 60, 30, 0xdede6c, 1)
+		local fuelBar = advancedTiles.addComplexBar(window, 10, 100, 0, 60, 30, 0xdede6c, 1)
 		fuelBar:SetRotation(270)
 		fuelBar:GetBackground():SetClickable(false)
-		window:AddText(10, 31, "Fuel", 0x000000):SetZ(1)
+		window:AddText(10, 31, "Fuel", 0x000000)
 
-		local wasteBar = advancedTiles.addComplexBar(window, 10, 100, 3, 60, 30, 0x4c99b2, 1)
+		local wasteBar = advancedTiles.addComplexBar(window, 10, 100, 2, 60, 30, 0x4c99b2, 1)
 		wasteBar:SetRotation(270)
 		local wasteBackground = wasteBar:GetBackground()
 		wasteBackground:SetClickable(false)
 		wasteBackground:SetVisible(false)
 
-		local caseBar = advancedTiles.addComplexBar(window, 50, 100, 1, 60, 30, 0x0000ff, 1)
+		local caseBar = advancedTiles.addComplexBar(window, 50, 100, 0, 60, 30, 0x0000ff, 1)
 		caseBar:SetRotation(270)
 		caseBar:GetBackground():SetClickable(false)
-		window:AddText(50, 21, "Case", 0x000000):SetZ(1)
-		window:AddText(50, 31, "Heat", 0x000000):SetZ(1)
+		window:AddText(50, 21, "Case", 0x000000)
+		window:AddText(50, 31, "Heat", 0x000000)
 
-		local coreBar = advancedTiles.addComplexBar(window, 90, 100, 1, 60, 30, 0x0000ff, 1)
+		local coreBar = advancedTiles.addComplexBar(window, 90, 100, 0, 60, 30, 0x0000ff, 1)
 		coreBar:SetRotation(270)
 		coreBar:GetBackground():SetClickable(false)
-		window:AddText(90, 21, "Core", 0x000000):SetZ(1)
-		window:AddText(90, 31, "Heat", 0x000000):SetZ(1)
+		window:AddText(90, 21, "Core", 0x000000)
+		window:AddText(90, 31, "Heat", 0x000000)
 
-		local energyBar = advancedTiles.addComplexBar(window, 130, 100, 1, 60, 30, 0xff0000, 1)
+		local energyBar = advancedTiles.addComplexBar(window, 130, 100, 0, 60, 30, 0xff0000, 1)
 		energyBar:SetRotation(270)
 		energyBar:GetBackground():SetClickable(false)
-		window:AddText(130, 31, "RF", 0x000000):SetZ(1)
-
-		local statusText = window:AddText(10, 121, "Status: Offline", 0xff0000)
-		statusText:SetZ(1)
-
-		local rfText = window:AddText(10, 136, "Energy Output: 0 RF/t", 0x000000)
-		rfText:SetZ(1)
-
-		local fuelText = window:AddText(10, 151, "Fuel Usage: 0 mB/t", 0x000000)
-		fuelText:SetZ(1)
-
-		local reactivityText = window:AddText(10, 166, "Reactivity: 0%", 0x000000)
-		reactivityText:SetZ(1)
+		window:AddText(130, 31, "RF", 0x000000)
 
 		local fluidWindow = guiTiles.newBasicWindow(window:AddSubTile(170, 60, -3), 55, 95, false)
 		fluidWindow:SetVisible(false)
 		fluidWindow:SetClickable(false)
 		guiTiles.makeDraggable(window, fluidWindow:GetBackground())
 
-		fluidWindow:AddText(5, 6, "Coolant:", 0x000000):SetZ(1)
+		fluidWindow:AddText(5, 6, "Coolant:", 0x000000)
 
-		local coolantBar = advancedTiles.addSimpleFluidBar(fluidWindow, 5, 90, 1, 70, 20, "water", 1)
+		local coolantBar = advancedTiles.addSimpleFluidBar(fluidWindow, 5, 90, 0, 70, 20, "water", 1)
 		coolantBar:SetRotation(270)
 		coolantBar:GetBackground():SetClickable(false)
 
-		local steamBar = advancedTiles.addSimpleFluidBar(fluidWindow, 30, 90, 1, 70, 20, "water", 1)
+		local steamBar = advancedTiles.addSimpleFluidBar(fluidWindow, 30, 90, 0, 70, 20, "water", 1)
 		steamBar:SetRotation(270)
 		steamBar:GetBackground():SetClickable(false)
 
@@ -75,10 +63,10 @@ return {
 				caseBar = caseBar,
 				coreBar = coreBar,
 				energyBar = energyBar,
-				statusText = statusText,
-				rfText = rfText,
-				fuelText = fuelText,
-				reactivityText = reactivityText,
+				statusText = window:AddText(10, 121, "Status: Offline", 0xff0000),
+				rfText = window:AddText(10, 136, "Energy Output: 0 RF/t", 0x000000),
+				fuelText = window:AddText(10, 151, "Fuel Usage: 0 mB/t", 0x000000),
+				reactivityText = window:AddText(10, 166, "Reactivity: 0%", 0x000000),
 				fluidWindow = fluidWindow,
 				coolantBar = coolantBar,
 				steamBar = steamBar,

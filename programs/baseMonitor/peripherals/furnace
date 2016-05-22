@@ -8,11 +8,11 @@ return {
 		local sourceObject = {
 			windowID = window:GetUserdata()[2],
 			displays = {
-				fuelProgress = advancedTiles.addSimpleFluidBar(window, 10, 55, 1, 20, 10, "lava", 1),
-				cookProgress = advancedTiles.addComplexBar(window, 30, 40, 1, 40, 10, 0xff0000, 1),
-				[1] = window:AddItemSlot(15, 25, 1),
-				[2] = window:AddItemSlot(15, 65, 1),
-				[3] = window:AddItemSlot(85, 45, 1),
+				fuelProgress = advancedTiles.addSimpleFluidBar(window, 10, 55, 0, 20, 10, "lava", 1),
+				cookProgress = advancedTiles.addComplexBar(window, 30, 40, 0, 40, 10, 0xff0000, 1),
+				[1] = window:AddItemSlot(15, 25, 0),
+				[2] = window:AddItemSlot(15, 65, 0),
+				[3] = window:AddItemSlot(85, 45, 0),
 			},
 		}
 		sourceObject.displays.fuelProgress:SetRotation(270)

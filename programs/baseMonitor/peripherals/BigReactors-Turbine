@@ -12,42 +12,27 @@ return {
 	width = 170,
 	height = 200,
 	add = function(name, window)
-		local speedBar = advancedTiles.addComplexBar(window, 10, 100, 1, 60, 30, 0x00ff00, 1)
+		local speedBar = advancedTiles.addComplexBar(window, 10, 100, 0, 60, 30, 0x00ff00, 1)
 		speedBar:SetRotation(270)
 		speedBar:GetBackground():SetClickable(false)
-		window:AddText(10, 31, "Speed", 0x000000):SetZ(1)
+		window:AddText(10, 31, "Speed", 0x000000)
 
-		local inputBar = advancedTiles.addSimpleFluidBar(window, 50, 100, 1, 60, 30, "steam", 1)
+		local inputBar = advancedTiles.addSimpleFluidBar(window, 50, 100, 0, 60, 30, "steam", 1)
 		inputBar:SetRotation(270)
 		inputBar:GetBackground():SetClickable(false)
-		window:AddText(50, 21, "Input", 0x000000):SetZ(1)
-		window:AddText(50, 31, "Fluid", 0x000000):SetZ(1)
+		window:AddText(50, 21, "Input", 0x000000)
+		window:AddText(50, 31, "Fluid", 0x000000)
 
-		local outputBar = advancedTiles.addSimpleFluidBar(window, 90, 100, 1, 60, 30, "water", 1)
+		local outputBar = advancedTiles.addSimpleFluidBar(window, 90, 100, 0, 60, 30, "water", 1)
 		outputBar:SetRotation(270)
 		outputBar:GetBackground():SetClickable(false)
-		window:AddText(90, 21, "Output", 0x000000):SetZ(1)
-		window:AddText(90, 31, "Fluid", 0x000000):SetZ(1)
+		window:AddText(90, 21, "Output", 0x000000)
+		window:AddText(90, 31, "Fluid", 0x000000)
 
-		local energyBar = advancedTiles.addComplexBar(window, 130, 100, 1, 60, 30, 0xff0000, 1)
+		local energyBar = advancedTiles.addComplexBar(window, 130, 100, 0, 60, 30, 0xff0000, 1)
 		energyBar:SetRotation(270)
 		energyBar:GetBackground():SetClickable(false)
-		window:AddText(130, 31, "RF", 0x000000):SetZ(1)
-
-		local statusText = window:AddText(10, 121, "Status: Offline", 0xff0000)
-		statusText:SetZ(1)
-
-		local engagedText = window:AddText(10, 136, "Coils: Disengaged", 0xff0000)
-		engagedText:SetZ(1)
-
-		local rfText = window:AddText(10, 151, "Energy Output: 0 RF/t", 0x000000)
-		rfText:SetZ(1)
-
-		local steamText = window:AddText(10, 166, "Steam Usage: 0 mB/t", 0x000000)
-		steamText:SetZ(1)
-
-		local efficiencyText = window:AddText(10, 181, "Efficiency: 0%", 0x000000)
-		efficiencyText:SetZ(1)
+		window:AddText(130, 31, "RF", 0x000000)
 
 		local object = {
 			windowID = window:GetUserdata()[2],
@@ -56,11 +41,11 @@ return {
 				inputBar = inputBar,
 				outputBar = outputBar,
 				energyBar = energyBar,
-				statusText = statusText,
-				engagedText = engagedText,
-				rfText = rfText,
-				steamText = steamText,
-				efficiencyText = efficiencyText,
+				statusText = window:AddText(10, 121, "Status: Offline", 0xff0000)
+				engagedText = window:AddText(10, 136, "Coils: Disengaged", 0xff0000)
+				rfText = window:AddText(10, 151, "Energy Output: 0 RF/t", 0x000000)
+				steamText = window:AddText(10, 166, "Steam Usage: 0 mB/t", 0x000000)
+				efficiencyText = window:AddText(10, 181, "Efficiency: 0%", 0x000000)
 			},
 			isActive = false,
 			isEngaged = false,

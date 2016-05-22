@@ -1081,7 +1081,7 @@ do
 			background = tile:AddBox(0, 0, width, height, 0xffffff, 1),
 			border = tile:AddLineList(0x000000, 1, {{x = 0, y = 0}, {x = width, y = 0}, {x = width, y = height}, {x = 0, y = height}, {x = 0, y = 0}})
 		}
-		basicWindow.border:SetZ(1)
+		basicWindow.background:SetZ(-1)
 		basicWindow.border:SetClickable(false)
 		
 		setmetatable(basicWindow, basicWindowMetatable)
