@@ -29,6 +29,62 @@ for _, apiName in ipairs(requiredAPIs) do
 	end
 end
 
+--===== LOAD CONFIG =====--
+local configMethods = {
+	Get = function(self, key)
+		return self.data[key] or false
+	end,
+	Set = function(self, key, value)
+		if type(key) == "string" and type(value) == "string" then
+			self.data[key] = value
+			return true
+		end
+		return false
+	end,
+	Load = function(self)
+		if fs.exists(self.path) and not fs.isDir(self.path) then
+			local handle = fs.open(self.path, "r")
+			if handle then
+				local data = handle.readAll()
+				handle.close()
+				if data then
+					data = textutils.unserialise(data)
+					if type(data) == "table" then
+						self.data = data
+						return true
+					end
+				end
+			end
+		end
+		return false
+	end,
+	Save = function(self)
+		if not fs.exists(self.path) or not fs.isDir(self.path) then
+			local handle = fs.open(self.path, "w")
+			if handle then
+				handle.write(textutils.serialise(self.data))
+				handle.close()
+				return true
+			end
+		end
+		return false
+	end,
+}
+local configMetatable = {__index = configMethods}
+
+local function initConfig(path)
+	if type(path) ~= "string" then
+		error("config.init - string expected", 2)
+	elseif fs.exists(path) and fs.isDir(path) then
+		error("config.init - invalid path: "..path, 2)
+	end
+	local config = {
+		path = path,
+		data = {},
+	}
+	return setmetatable(config, configMetatable)
+end
+
 --===== CHECK CONFIG DIR =====--
 local configPath = fs.combine(path, "config")
 if not fs.exists(configPath) then
@@ -141,7 +197,7 @@ local function newPlayerHandler(playerUUID, surfaceHandler)
 
 		local windowHandler = guiTiles.newBasicWindowHandler()
 		
-		local userConfig = config.init(fs.combine(configPath, playerUUID))
+		local userConfig = initConfig(fs.combine(configPath, playerUUID))
 		userConfig:Load()
 		
 		local selectionWindow = guiTiles.newBasicWindow(surfaceHandler:AddTile(10, 10, 1), 80, 50)
