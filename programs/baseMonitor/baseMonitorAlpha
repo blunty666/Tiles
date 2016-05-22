@@ -1,4 +1,6 @@
 local tArgs = {...}
+
+--===== FIND TERMINAL GLASSES BRIDGE =====--
 local bridge
 if type(tArgs[1]) == "string" and peripheral.getType(tArgs[1]) == "openperipheral_bridge" then
 	bridge = peripheral.wrap(tArgs[1])
@@ -7,19 +9,73 @@ else
 	error("could not find bridge on side: "..tostring(tArgs[1]))
 end
 
+--===== FIND PROGRAM PATH =====--
+local path = fs.getDir(shell.getRunningProgram())
+
+--===== LOAD APIS =====--
+local apiPath = fs.combine(path, "apis")
 local requiredAPIs = {
 	"tiles",
 	"guiTiles",
 	"advancedTiles",
 	"remotePeripheralClient",
+	"config",
 }
-
 for _, apiName in ipairs(requiredAPIs) do
 	if not _G.apiName then
-		if not os.loadAPI(apiName) then
-			error("Could not load API: ", apiName)
+		if not os.loadAPI(fs.combine(apiPath, apiName)) then
+			error("Could not load API: "..apiName)
 		end
 	end
+end
+
+--===== CHECK CONFIG DIR =====--
+local configPath = fs.combine(path, "config")
+if not fs.exists(configPath) then
+	fs.makeDir(configPath)
+elseif not fs.isDir(configPath) then
+	error("someone is using my config directory!!!")
+end
+
+--===== LOAD REMOTE PERIPHERAL CLIENT =====--
+local remotePeripherals = remotePeripheralClient.new()
+
+--===== LOAD PERIPHERAL DATA =====--
+local peripheralPath = fs.combine(path, "peripherals")
+local peripherals = {}
+local function loadPeripheral(peripheralName)
+	local func, err = loadfile(fs.combine(peripheralPath, peripheralName))
+	if func then
+		local ok, ret = pcall(func, remotePeripherals)
+		if not ok then
+			printError("error loading peripheralData for: "..peripheralName)
+			printError("got error: "..ret)
+		else
+			peripherals[peripheralName] = ret
+		end
+	end
+end
+for _, peripheralName in ipairs(fs.list(peripheralPath)) do
+	loadPeripheral(peripheralName)
+end
+
+--===== LOAD SOURCE DATA =====--
+local sourcePath = fs.combine(path, "sources")
+local sources = {}
+local function loadSource(sourceName)
+	local func, err = loadfile(fs.combine(sourcePath, sourceName))
+	if func then
+		local ok, ret = pcall(func, remotePeripherals)
+		if not ok then
+			printError("error loading sourceData for: "..sourceName)
+			printError("got error: "..ret)
+		else
+			sources[sourceName] = ret
+		end
+	end
+end
+for _, sourceName in ipairs(fs.list(sourcePath)) do
+	loadSource(sourceName)
 end
 
 local function textToSize(text, width)
@@ -31,7 +87,52 @@ local function textToSize(text, width)
 	return text
 end
 
-local remotePeripherals = remotePeripheralClient.new()
+local minWidth, minHeight = 20, 10
+local function newGraphWindow(windowHandler, surfaceHandler, uniqueID, width, height, updateName, objectType, configName)
+	local width, height = math.max(width, minWidth), math.max(height, minHeight)
+
+	local window = windowHandler:New(surfaceHandler:AddTile(-(width/2), -(height/2), 1), width, height, true)
+	window:SetScreenAnchor("MIDDLE", "MIDDLE")
+
+	local expansionWindow = guiTiles.newBasicWindow(window:AddSubTile(0, -10, -1), 100, 10, false)
+	expansionWindow:SetVisible(false)
+	expansionWindow:SetClickable(false)
+
+	local mainText = window:AddText(1, 1, textToSize(configName, width - 10), 0x000000)
+	mainText:SetZ(2)
+	mainText:SetClickable(false)
+	local textBackground = window:AddBox(1, 1, width - 9, 8, 0xffffff, 1)
+	textBackground:SetZ(1)
+	textBackground:SetVisible(false)
+	textBackground:SetOnClick(
+		function(object, button)
+			if button == 1 then
+				expansionWindow:SetVisible(true)
+				expansionWindow:SetClickable(true)
+			end
+		end
+	)
+	guiTiles.makeDraggable(window, textBackground)
+			
+	local textBox
+	local function textBoxSubmit(text)
+		text = updateName(objectType, uniqueID, text)
+		textBox:SetText(text)
+		textBox:SetCursorPos(0)
+		mainText:SetText(textToSize(text, width - 10))
+		expansionWindow:SetVisible(false)
+		expansionWindow:SetClickable(false)
+	end
+	textBox = expansionWindow:AddTextBox(0, 0, 1, 100, textBoxSubmit)
+	textBox.background:SetVisible(false)
+	textBox:SetText(configName)
+	textBox:SetOnDeselect(function() textBoxSubmit(textBox:GetText()) end)
+
+	local closeButton = window:AddButton(width - 8, 1, 1, "X", 0xff0000, 0xffffff, 0x00ff00, 0x000000)
+	closeButton:SetOnRelease(function() window:SetDrawn(false) end)
+			
+	return window
+end
 
 local function newPlayerHandler(playerUUID, surfaceHandler)
 	return function()
@@ -39,24 +140,9 @@ local function newPlayerHandler(playerUUID, surfaceHandler)
 		local guiHandler = guiTiles.newGuiHandler(surfaceHandler)
 
 		local windowHandler = guiTiles.newBasicWindowHandler()
-
-		local minWidth, minHeight = 50, 20
-		local function newGraphWindow(uniqueID, width, height, updateName, objectType)
-			local width, height = math.max(width, minWidth), math.max(height, minHeight)
-
-			local window = windowHandler:New(surfaceHandler:AddTile(-(width/2), -(height/2), 1), width, height, true)
-			window:SetScreenAnchor("MIDDLE", "MIDDLE")
-			
-			local textBox = window:AddTextBox(1, 1, 1, width - 10, function(text) updateName(objectType, uniqueID, text) end)
-			textBox.background:SetVisible(false)
-			textBox:SetText(uniqueID)
-			textBox:SetOnDeselect(function(text) updateName(objectType, uniqueID, textBox:GetText()) end)
-
-			local closeButton = window:AddButton(width - 8, 1, 1, "X", 0xff0000, 0xffffff, 0x00ff00, 0x000000)
-			closeButton:SetOnRelease(function() window:SetDrawn(false) end)
-			
-			return window
-		end
+		
+		local userConfig = config.init(fs.combine(configPath, playerUUID))
+		userConfig:Load()
 		
 		local selectionWindow = guiTiles.newBasicWindow(surfaceHandler:AddTile(10, 10, 1), 80, 50)
 		local peripheralTypes = {}
@@ -107,13 +193,19 @@ local function newPlayerHandler(playerUUID, surfaceHandler)
 			peripheralTypes.add = function(peripheralType, name)
 				local peripheralData = peripheralTypes.list[peripheralType]
 				if peripheralData then
-					local window = newGraphWindow(name, peripheralData.width, peripheralData.height, peripheralTypes.update, peripheralType)
+					local configName = userConfig:Get(table.concat({"peripheral", peripheralType, name}, ".")) or name
+					local window = newGraphWindow(windowHandler, surfaceHandler, name, peripheralData.width, peripheralData.height, peripheralTypes.update, peripheralType, configName)
 					local object = peripheralTypes.list[peripheralType].add(name, window)
 					peripheralTypes.list[peripheralType].list[name] = object
-					peripheralTypes.list[peripheralType].listObject:AddItem(1, {name, name})
+					peripheralTypes.list[peripheralType].listObject:AddItem(1, {name, configName})
 				end
 			end
 			peripheralTypes.update = function(peripheralType, peripheralName, peripheralNewName)
+				if string.len(peripheralNewName) == 0 then
+					peripheralNewName = peripheralName
+				end
+				userConfig:Set(table.concat({"peripheral", peripheralType, peripheralName}, "."), peripheralNewName)
+				userConfig:Save()
 				if peripheralTypes.list[peripheralType] then
 					local list = peripheralTypes.list[peripheralType].listObject
 					
@@ -124,6 +216,7 @@ local function newPlayerHandler(playerUUID, surfaceHandler)
 						end
 					end
 				end
+				return peripheralNewName
 			end
 			peripheralTypes.remove = function(peripheralType, name)
 				local object = peripheralTypes.list[peripheralType].list[name]
@@ -166,13 +259,20 @@ local function newPlayerHandler(playerUUID, surfaceHandler)
 			sourceTypes.add = function(sourceType, name)
 				local sourceData = sourceTypes.list[sourceType]
 				if sourceData then
-					local window = newGraphWindow(name, sourceData.width, sourceData.height, sourceTypes.update, sourceType)
+					local configName = userConfig:Get(table.concat({"source", sourceType, name}, ".")) or name
+					local window = newGraphWindow(windowHandler, surfaceHandler, name, sourceData.width, sourceData.height, sourceTypes.update, sourceType, configName)
 					local sourceObject = sourceTypes.list[sourceType].add(name, window)
 					sourceTypes.list[sourceType].list[name] = sourceObject
-					sourceTypes.list[sourceType].listObject:AddItem(1, {name, name})
+					sourceTypes.list[sourceType].listObject:AddItem(1, {name, configName})
 				end
 			end
 			sourceTypes.update = function(sourceType, sourceName, sourceNewName)
+				if string.len(sourceNewName) == 0 then
+					sourceNewName = sourceName
+				end
+				userConfig:Set(table.concat({"source", sourceType, sourceName}, "."), sourceNewName)
+				userConfig:Save()
+				
 				if sourceTypes.list[sourceType] then
 					local list = sourceTypes.list[sourceType].listObject
 					
@@ -183,6 +283,7 @@ local function newPlayerHandler(playerUUID, surfaceHandler)
 						end
 					end
 				end
+				return sourceNewName
 			end
 			sourceTypes.remove = function(sourceType, name)
 				local sourceObject = sourceTypes.list[sourceType].list[name]
@@ -199,132 +300,7 @@ local function newPlayerHandler(playerUUID, surfaceHandler)
 			end
 		end
 
-		local peripherals = {
-			furnace = {
-				display_name = "Vanilla Furnace",
-				width = 100,
-				height = 80,
-				add = function(name, window)
-					local sourceObject = {
-						windowID = window:GetUserdata()[2],
-						displays = {
-							fuelProgress = advancedTiles.addSimpleFluidBar(window, 10, 55, 1, 20, 10, "lava", 1),
-							cookProgress = advancedTiles.addComplexBar(window, 30, 40, 1, 40, 10, 0xff0000, 1),
-							[1] = window:AddItemSlot(15, 25, 1),
-							[2] = window:AddItemSlot(15, 65, 1),
-							[3] = window:AddItemSlot(85, 45, 1),
-						},
-					}
-					sourceObject.displays.fuelProgress:SetRotation(270)
-					
-					return sourceObject
-				end,
-				update = function(name, sourceObject)
-					local curBurn, maxBurn
-					local isCooking, curCook
-					local maxCook = 200
-					local furnaceData = remotePeripherals:GetSourceData(name, "vanilla_furnace")
-					if furnaceData then
-						curBurn, maxBurn = furnaceData.getBurnTime, furnaceData.getCurrentItemBurnTime
-						isCooking, curCook = furnaceData.isBurning, furnaceData.getCookTime
-					end
-					
-					if type(curBurn) == "number" and type(maxBurn) == "number" then
-						sourceObject.displays.fuelProgress:SetPercent(curBurn/maxBurn)
-					else
-						sourceObject.displays.fuelProgress:SetPercent(0)
-					end
-					if isCooking and type(curCook) == "number" then
-						sourceObject.displays.cookProgress:SetPercent(curCook/maxCook)
-					else
-						sourceObject.displays.cookProgress:SetPercent(0)
-					end
-					
-					local items
-					local itemData = remotePeripherals:GetSourceData(name, "inventory")
-					if itemData then
-						items = itemData.getAllStacks
-					end
-					for i = 1, 3 do
-						if items and items[i] then
-							sourceObject.displays[i]:SetItemId(items[i].id)
-							sourceObject.displays[i]:SetMeta(items[i].dmg)
-							sourceObject.displays[i]:SetAmount(items[i].qty)
-							if items[i].health_bar then
-								sourceObject.displays[i]:SetDamageBar(items[i].health_bar)
-							else
-								sourceObject.displays[i]:SetDamageBar(0)
-							end
-						else
-							sourceObject.displays[i]:SetAmount(false)
-						end
-					end
-				end,
-			},
-			tile_thermalexpansion_machine_furnace_name = {
-				display_name = "Redstone Furnace",
-				width = 100,
-				height = 80,
-				add = function(name, window)
-					local sourceObject = {
-						windowID = window:GetUserdata()[2],
-						cookProgress = 0,
-						displays = {
-							energy = advancedTiles.addComplexBar(window, 10, 70, 1, 50, 10, 0xff0000, 1),
-							cookProgress = advancedTiles.addSimpleBoxBar(window, 50, 42, 1, 20, 6, 0xffffff, 1),
-							[1] = window:AddItemSlot(40, 45, 1),
-							[2] = window:AddItemSlot(80, 45, 1),
-						},
-					}
-					sourceObject.displays.energy:SetRotation(270)
-					
-					return sourceObject
-				end,
-				update = function(name, sourceObject)
-					local curEnergy, maxEnergy
-					local energyPerTick
-					local rfData = remotePeripherals:GetSourceData(name, "rf_info")
-					if rfData then
-						curEnergy = rfData.getEnergyInfo
-						maxEnergy = rfData.getMaxEnergyInfo
-						energyPerTick = rfData.getEnergyPerTickInfo
-					end
 
-					if type(curEnergy) == "number" and type(maxEnergy) == "number" then
-						sourceObject.displays.energy:SetPercent(curEnergy/maxEnergy)
-					else
-						sourceObject.displays.energy:SetPercent(0)
-					end
-
-					if type(energyPerTick) == "number" and energyPerTick > 0 then
-						sourceObject.cookProgress = (sourceObject.cookProgress + 1) % 5
-						sourceObject.displays.cookProgress:SetPercent(sourceObject.cookProgress/4)
-					else
-						sourceObject.displays.cookProgress:SetPercent(0)
-					end
-					
-					local items
-					local itemData = remotePeripherals:GetSourceData(name, "inventory")
-					if itemData then
-						items = itemData.getAllStacks
-					end
-					for i = 1, 2 do
-						if items and items[i] then
-							sourceObject.displays[i]:SetItemId(items[i].id)
-							sourceObject.displays[i]:SetMeta(items[i].dmg)
-							sourceObject.displays[i]:SetAmount(items[i].qty)
-							if items[i].health_bar then
-								sourceObject.displays[i]:SetDamageBar(items[i].health_bar)
-							else
-								sourceObject.displays[i]:SetDamageBar(0)
-							end
-						else
-							sourceObject.displays[i]:SetAmount(false)
-						end
-					end
-				end,
-			},
-		}
 		for peripheralType, peripheralData in pairs(peripherals) do
 		
 			local name = peripheralData.display_name or peripheralType
@@ -360,66 +336,7 @@ local function newPlayerHandler(playerUUID, surfaceHandler)
 			
 			peripheralTypes.list[peripheralType] = peripheralData
 		end
-		
-		local sources = {
-			rf_receiver = {
-				width = 100,
-				height = 80,
-				add = function(name, window)
-					local graph = advancedTiles.addBoxBarGraph(window, 5, 15, 1, 90, 60, 0xff0000, 1, 1)
-					graph:GetBackground():SetClickable(false)
-					local sourceObject = {
-						windowID = window:GetUserdata()[2],
-						displays = {
-							mainGraph = graph,
-						},
-						backgroundUpdate = true,
-					}
-					return sourceObject
-				end,
-				update = function(name, sourceObject)
-					local percent = 0
-					local data = remotePeripherals:GetSourceData(name, "rf_receiver")
-					if data then
-						local curEnergy = data.getEnergyStored
-						local maxEnergy = data.getMaxEnergyStored
-						if type(curEnergy) == "number" and type(maxEnergy) == "number" then
-							percent = curEnergy / maxEnergy
-						end
-					end
-					sourceObject.displays.mainGraph:Update(percent)
-				end,
-			},
-			fluid_handler = {
-				width = 100,
-				height = 80,
-				add = function(name, window)
-					local graph = advancedTiles.addBoxBarGraph(window, 5, 15, 1, 90, 60, 0xff0000, 1, 1)
-					graph:GetBackground():SetClickable(false)
-					local sourceObject = {
-						windowID = window:GetUserdata()[2],
-						displays = {
-							mainGraph = graph,
-						},
-						backgroundUpdate = true,
-					}
-					return sourceObject
-				end,
-				update = function(name, sourceObject)
-					local percent = 0
-					local data = remotePeripherals:GetSourceData(name, "fluid_handler")
-					if data then
-						local tankInfo = data.getTankInfo
-						if tankInfo and tankInfo[1] then
-							if tankInfo[1].contents then
-								percent = tankInfo[1].contents.amount / tankInfo[1].capacity
-							end
-						end
-					end
-					sourceObject.displays.mainGraph:Update(percent)
-				end,
-			},
-		}
+
 		for sourceType, sourceData in pairs(sources) do
 		
 			local name = sourceData.display_name or sourceType
@@ -457,6 +374,19 @@ local function newPlayerHandler(playerUUID, surfaceHandler)
 		end
 
 		local function peripheralChecker()
+			for peripheralName, peripheralData in pairs(remotePeripherals.list) do
+				if peripheralTypes.list[peripheralData.type] then
+					peripheralTypes.add(peripheralData.type, peripheralName)
+				end
+				if peripheralData.sources then
+					for source, _ in pairs(peripheralData.sources) do
+						if sourceTypes.list[source] then
+							sourceTypes.add(source, peripheralName)
+						end
+					end
+				end
+			end
+
 			while true do
 				local eventType, peripheralName = os.pullEvent()
 				if eventType == "remote_peripheral_add" then
