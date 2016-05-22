@@ -19,6 +19,9 @@ function getStringWidth(str)
 end
 
 function getMaxStringLength(str, width, startPos)
+	if type(str) ~= "string" then
+		error("getMaxStringLength: expected string, got "..type(str), 2)
+	end
 	local endPos = string.len(str)
 	while getStringWidth(string.sub(str, startPos or 1, endPos)) > width do
 		endPos = endPos - 1
@@ -1609,7 +1612,7 @@ tileMethods.AddSubTile = function(self, xPos, yPos, zPos, name)
 	end
 	if not _checkProperty.number(xPos) then error("xPos: number expected") end
 	if not _checkProperty.number(yPos) then error("yPos: number expected") end
-	if zPos ~= nil and not _checkProperty.positive_number(zPos) then error("zPos: number expected") end
+	if zPos ~= nil and not _checkProperty.number(zPos) then error("zPos: number expected") end
 	
 	local tileID = self.surfaceHandler.tiles.nextID
 	self.surfaceHandler.tiles.nextID = tileID + 1

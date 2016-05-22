@@ -839,6 +839,18 @@ do
 	end		
 
 	local textBoxMethods = {
+		GetCursorPos = function(self)
+			return self.cursorPos
+		end,
+		SetCursorPos = function(self, cursorPos)
+			if tiles.checkProperty.positive_number(cursorPos) then
+				self.cursorPos = math.min(cursorPos, string.len(self.currText))
+				redrawTextBox(self)
+				return true
+			end
+			return false
+		end,
+		
 		GetMask = function(self)
 			return self.mask
 		end,

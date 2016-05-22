@@ -305,7 +305,7 @@ local lineGraphMethods = {
 			table.insert(self.values, math.min(1, math.max(0, value)))
 			table.remove(self.values, 1)
 			for i, point in ipairs(self.points) do
-				point.y = -(self:GetHeight()*self.values[i])
+				point.y = -((self:GetHeight() - 1)*self.values[i])
 			end
 			self.line:SetPoints(self.points)
 			return true
