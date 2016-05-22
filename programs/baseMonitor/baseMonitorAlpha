@@ -19,7 +19,6 @@ local requiredAPIs = {
 	"guiTiles",
 	"advancedTiles",
 	"remotePeripheralClient",
-	"config",
 }
 for _, apiName in ipairs(requiredAPIs) do
 	if not _G.apiName then
