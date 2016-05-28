@@ -71,7 +71,9 @@ for localPath, remotePathDetails in pairs(fileList) do
 	if not fs.exists(path) or not (fs.isDir(path) or noOverwrite) then
 		local fileData = get(url)			
 		if fileData then
-			if not save(fileData, path) then
+			if save(fileData, path) then
+				print("Download successful: ", localPath)
+			else
 				print("Save failed: ", localPath)
 			end
 		else
