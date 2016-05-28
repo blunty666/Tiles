@@ -41,11 +41,11 @@ return {
 				inputBar = inputBar,
 				outputBar = outputBar,
 				energyBar = energyBar,
-				statusText = window:AddText(10, 121, "Status: Offline", 0xff0000)
-				engagedText = window:AddText(10, 136, "Coils: Disengaged", 0xff0000)
-				rfText = window:AddText(10, 151, "Energy Output: 0 RF/t", 0x000000)
-				steamText = window:AddText(10, 166, "Steam Usage: 0 mB/t", 0x000000)
-				efficiencyText = window:AddText(10, 181, "Efficiency: 0%", 0x000000)
+				statusText = window:AddText(10, 121, "Status: Offline", 0xff0000),
+				engagedText = window:AddText(10, 136, "Coils: Disengaged", 0xff0000),
+				rfText = window:AddText(10, 151, "Energy Output: 0 RF/t", 0x000000),
+				steamText = window:AddText(10, 166, "Steam Usage: 0 mB/t", 0x000000),
+				efficiencyText = window:AddText(10, 181, "Efficiency: 0%", 0x000000),
 			},
 			isActive = false,
 			isEngaged = false,
