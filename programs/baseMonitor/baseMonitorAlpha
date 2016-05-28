@@ -21,7 +21,7 @@ local requiredAPIs = {
 	"remotePeripheralClient",
 }
 for _, apiName in ipairs(requiredAPIs) do
-	if not _G.apiName then
+	if not _G[apiName] then
 		if not os.loadAPI(fs.combine(apiPath, apiName)) then
 			error("Could not load API: "..apiName)
 		end
