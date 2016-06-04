@@ -12,11 +12,11 @@ if fs.exists(saveDir) and not fs.isDir(saveDir) then
 end
 
 local fileList = {
-	["baseMonitor"] = {"Tiles", "programs/baseMonitor/baseMonitorAlpha"},
+	["baseMonitor"] = {"Tiles", "programs/baseMonitor/baseMonitor.lua"},
 
-	["apis/tiles"] = {"Tiles", "tiles"},
-	["apis/guiTiles"] = {"Tiles", "apis/guiTiles"},
-	["apis/advancedTiles"] = {"Tiles", "apis/advancedTiles"},
+	["apis/tiles"] = {"Tiles", "tiles.lua"},
+	["apis/guiTiles"] = {"Tiles", "apis/guiTiles.lua"},
+	["apis/advancedTiles"] = {"Tiles", "apis/advancedTiles.lua"},
 	["apis/remotePeripheralClient"] = {"CC-Programs-and-APIs", "remotePeripheral/remotePeripheralClient"},
 }
 
@@ -24,7 +24,7 @@ local peripheralListHandle = http.get(table.concat({mainURL, "Tiles", "master", 
 if peripheralListHandle then
 	local peripheralType = peripheralListHandle.readLine()
 	while peripheralType do
-		fileList["peripherals/"..peripheralType] = {"Tiles", "programs/baseMonitor/peripherals/"..peripheralType}
+		fileList["peripherals/"..peripheralType] = {"Tiles", "programs/baseMonitor/peripherals/"..peripheralType..".lua"}
 		peripheralType = peripheralListHandle.readLine()
 	end
 	peripheralListHandle.close()
@@ -36,7 +36,7 @@ local sourceListHandle = http.get(table.concat({mainURL, "Tiles", "master", "pro
 if sourceListHandle then
 	local sourceType = sourceListHandle.readLine()
 	while sourceType do
-		fileList["sources/"..sourceType] = {"Tiles", "programs/baseMonitor/sources/"..sourceType}
+		fileList["sources/"..sourceType] = {"Tiles", "programs/baseMonitor/sources/"..sourceType..".lua"}
 		sourceType = sourceListHandle.readLine()
 	end
 	sourceListHandle.close()

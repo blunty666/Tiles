@@ -249,7 +249,7 @@ local function newPlayerHandler(playerUUID, surfaceHandler)
 				if peripheralData then
 					local configName = userConfig:Get(table.concat({"peripheral", peripheralType, name}, ".")) or name
 					local window = newGraphWindow(windowHandler, surfaceHandler, name, peripheralData.width, peripheralData.height, peripheralTypes.update, peripheralType, configName)
-					local object = peripheralTypes.list[peripheralType].add(name, window)
+					local object = peripheralTypes.list[peripheralType].add(name, window, userConfig)
 					peripheralTypes.list[peripheralType].list[name] = object
 					peripheralTypes.list[peripheralType].listObject:AddItem(1, {name, configName})
 				end
@@ -315,7 +315,7 @@ local function newPlayerHandler(playerUUID, surfaceHandler)
 				if sourceData then
 					local configName = userConfig:Get(table.concat({"source", sourceType, name}, ".")) or name
 					local window = newGraphWindow(windowHandler, surfaceHandler, name, sourceData.width, sourceData.height, sourceTypes.update, sourceType, configName)
-					local sourceObject = sourceTypes.list[sourceType].add(name, window)
+					local sourceObject = sourceTypes.list[sourceType].add(name, window, userConfig)
 					sourceTypes.list[sourceType].list[name] = sourceObject
 					sourceTypes.list[sourceType].listObject:AddItem(1, {name, configName})
 				end
