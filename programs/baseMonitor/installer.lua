@@ -1,3 +1,5 @@
+local updateOnly = (...) == "--update"
+
 local noOverwrite = (...) == "true"
 
 local rootURL = "https://raw.githubusercontent.com"
@@ -11,20 +13,28 @@ if fs.exists(saveDir) and not fs.isDir(saveDir) then
 	return
 end
 
-local fileList = {
-	["baseMonitor"] = {"Tiles", "programs/baseMonitor/baseMonitor.lua"},
+local fileList
 
-	["apis/tiles"] = {"Tiles", "tiles.lua"},
-	["apis/guiTiles"] = {"Tiles", "apis/guiTiles.lua"},
-	["apis/advancedTiles"] = {"Tiles", "apis/advancedTiles.lua"},
-	["apis/remotePeripheralClient"] = {"CC-Programs-and-APIs", "remotePeripheral/remotePeripheralClient"},
-}
+if not updateOnly then
+	fileList = {
+		["baseMonitor"] = {"Tiles", "programs/baseMonitor/baseMonitor.lua"},
+
+		["apis/tiles"] = {"Tiles", "tiles.lua"},
+		["apis/guiTiles"] = {"Tiles", "apis/guiTiles.lua"},
+		["apis/advancedTiles"] = {"Tiles", "apis/advancedTiles.lua"},
+		["apis/remotePeripheralClient"] = {"CC-Programs-and-APIs", "remotePeripheral/remotePeripheralClient"},
+	}
+else
+	fileList = {}
+end
 
 local peripheralListHandle = http.get(table.concat({mainURL, "Tiles", "master", "programs/baseMonitor/peripheralList"}, "/"))
 if peripheralListHandle then
 	local peripheralType = peripheralListHandle.readLine()
 	while peripheralType do
-		fileList["peripherals/"..peripheralType] = {"Tiles", "programs/baseMonitor/peripherals/"..peripheralType..".lua"}
+		if not updateOnly or not fs.exists(fs.combine(saveDir, "peripherals/"..peripheralType)) then
+			fileList["peripherals/"..peripheralType] = {"Tiles", "programs/baseMonitor/peripherals/"..peripheralType..".lua"}
+		end
 		peripheralType = peripheralListHandle.readLine()
 	end
 	peripheralListHandle.close()
@@ -36,7 +46,9 @@ local sourceListHandle = http.get(table.concat({mainURL, "Tiles", "master", "pro
 if sourceListHandle then
 	local sourceType = sourceListHandle.readLine()
 	while sourceType do
-		fileList["sources/"..sourceType] = {"Tiles", "programs/baseMonitor/sources/"..sourceType..".lua"}
+		if not updateOnly or not fs.exists(fs.combine(saveDir, "sources/"..sourceType)) then
+			fileList["sources/"..sourceType] = {"Tiles", "programs/baseMonitor/sources/"..sourceType..".lua"}
+		end
 		sourceType = sourceListHandle.readLine()
 	end
 	sourceListHandle.close()
