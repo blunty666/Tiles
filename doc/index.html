@@ -1,0 +1,253 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN"
+   "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd">
+<html>
+<meta http-equiv="Content-Type" content="text/html; charset=UTF-8"/>
+<head>
+    <title>Reference</title>
+    <link rel="stylesheet" href="ldoc.css" type="text/css" />
+</head>
+<body>
+
+<div id="container">
+
+<div id="product">
+	<div id="product_logo"></div>
+	<div id="product_name"><big><b></b></big></div>
+	<div id="product_description"></div>
+</div> <!-- id="product" -->
+
+
+<div id="main">
+
+
+<!-- Menu -->
+
+<div id="navigation">
+<br/>
+<h1>ldoc</h1>
+
+
+<h2>Contents</h2>
+<ul>
+<li><a href="#Functions">Functions</a></li>
+<li><a href="#Tables">Tables</a></li>
+</ul>
+
+
+<h2>Modules</h2>
+<ul class="$(kind=='Topics' and '' or 'nowrap'">
+  <li><strong>tiles</strong></li>
+</ul>
+
+</div>
+
+<div id="content">
+
+<h1>Module <code>tiles</code></h1>
+<p>Compositing API for Terminal Glasses.</p>
+<p>
+ The Tiles API offers a new fundamental way of interacting with the Terminal Glasses drawing surface by allowing one to draw to subsurfaces called "tiles".</p>
+    <h3>Info:</h3>
+    <ul>
+        <li><strong>Copyright</strong>: <a href=https://github.com/blunty666>Blunty666</a></li>
+        <li><strong>License</strong>: <a href=https://opensource.org/licenses/MIT>MIT</a></li>
+        <li><strong>Author</strong>: <a href=https://github.com/blunty666>Blunty666</a> (code),<a href=https://github.com/Fizzixnerd>Fizzixnerd</a> (docs)</li>
+    </ul>
+
+
+<h2><a href="#Functions">Functions</a></h2>
+<table class="function_list">
+	<tr>
+	<td class="name" nowrap><a href="#getStringWidth">getStringWidth (str)</a></td>
+	<td class="summary">Return the on-screen width of a string.</td>
+	</tr>
+	<tr>
+	<td class="name" nowrap><a href="#getMaxStringLength">getMaxStringLength (str, width, startPos)</a></td>
+	<td class="summary">Return the longest length of a substring of `str' starting at
+ `startPos' which will fit within a line of length `width'.</td>
+	</tr>
+</table>
+<h2><a href="#Tables">Tables</a></h2>
+<table class="function_list">
+	<tr>
+	<td class="name" nowrap><a href="#checkProperty">checkProperty</a></td>
+	<td class="summary">Contains functions for type-checking arguments.</td>
+	</tr>
+</table>
+
+<br/>
+<br/>
+
+
+    <h2 class="section-header "><a name="Functions"></a>Functions</h2>
+
+    <dl class="function">
+    <dt>
+    <a name = "getStringWidth"></a>
+    <strong>getStringWidth (str)</strong>
+    </dt>
+    <dd>
+    Return the on-screen width of a string.
+
+
+    <h3>Parameters:</h3>
+    <ul>
+        <li><span class="parameter">str</span>
+            <span class="types"><a class="type" href="http://www.lua.org/manual/5.1/manual.html#5.4">string</a></span>
+
+        </li>
+    </ul>
+
+    <h3>Returns:</h3>
+    <ol>
+
+           <span class="types"><span class="type">int</span></span>
+        width
+    </ol>
+
+    <h3>Raises:</h3>
+    error when str is not a string.
+
+
+
+</dd>
+    <dt>
+    <a name = "getMaxStringLength"></a>
+    <strong>getMaxStringLength (str, width, startPos)</strong>
+    </dt>
+    <dd>
+    Return the longest length of a substring of `str' starting at
+ `startPos' which will fit within a line of length `width'.
+
+
+    <h3>Parameters:</h3>
+    <ul>
+        <li><span class="parameter">str</span>
+            <span class="types"><a class="type" href="http://www.lua.org/manual/5.1/manual.html#5.4">string</a></span>
+
+        </li>
+        <li><span class="parameter">width</span>
+            <span class="types"><span class="type">number</span></span>
+
+        </li>
+        <li><span class="parameter">startPos</span>
+            <span class="types"><span class="type">number</span></span>
+
+        </li>
+    </ul>
+
+    <h3>Returns:</h3>
+    <ol>
+
+           <span class="types"><span class="type">int</span></span>
+        width
+    </ol>
+
+    <h3>Raises:</h3>
+    error when str is not a string.
+
+
+
+</dd>
+</dl>
+    <h2 class="section-header "><a name="Tables"></a>Tables</h2>
+
+    <dl class="function">
+    <dt>
+    <a name = "checkProperty"></a>
+    <strong>checkProperty</strong>
+    </dt>
+    <dd>
+    Contains functions for type-checking arguments.
+ If a function expects an argument of type `typename', then
+ checkProperty[typename](val) returns true iff `val' is of type
+ `typename'.
+
+
+    <h3>Fields:</h3>
+    <ul>
+        <li><span class="parameter">name</span>
+         A Lua string or nil.
+        </li>
+        <li><span class="parameter">number</span>
+         A Lua number.
+        </li>
+        <li><span class="parameter">positive_number</span>
+         A _non-negative_ Lua number.
+        </li>
+        <li><span class="parameter">string</span>
+         A Lua string.
+        </li>
+        <li><span class="parameter">boolean</span>
+         A Lua boolean.
+        </li>
+        <li><span class="parameter">alignment</span>
+         A valid pair of alignment specifiers.
+        </li>
+        <li><span class="parameter">userdata</span>
+         Any value.
+        </li>
+        <li><span class="parameter">function</span>
+         A Lua function.
+        </li>
+        <li><span class="parameter">percent</span>
+         A Lua number between 0 and 1 (inclusive).
+        </li>
+        <li><span class="parameter">alpha</span>
+         An integer between 0 and 255 (inclusive).
+        </li>
+        <li><span class="parameter">colour</span>
+         An integer between 0x000000 and 0xFFFFFF (inclusive).
+        </li>
+        <li><span class="parameter">gradient</span>
+         An integer equal to either 1 or 2.
+        </li>
+        <li><span class="parameter">simplePoint</span>
+         A table which has fields `x' and `y' with values which are Lua numbers.
+        </li>
+        <li><span class="parameter">complexPoint</span>
+         A `simplePoint' which optionally contains the fields `rgb' or `opacity' with values which are a `colour' and a `percent' respectively.
+        </li>
+        <li><span class="parameter">simplePoints</span>
+         An array of `simplePoint' values.
+        </li>
+        <li><span class="parameter">complexPoints</span>
+         An array of `complexPoint' values.
+        </li>
+        <li><span class="parameter">meta</span>
+         An integer between 0 and 15 (inclusive).  Represents a Minecraft item meta value.
+        </li>
+        <li><span class="parameter">surface</span>
+         A `surface' object as exposed by the Terminal Glasses API.
+        </li>
+        <li><span class="parameter">capture</span>
+         A `capture' object as exposed by the Terminal Glasses API.
+        </li>
+        <li><span class="parameter">bridge</span>
+         A wrapped Terminal Glasses Bridge (for example, the object returned by the call peripheral.wrap(sideOfBridge)).
+        </li>
+        <li><span class="parameter">functionOrNil</span>
+         A Lua function or nil.
+        </li>
+    </ul>
+
+
+
+    <h3>See also:</h3>
+    <ul>
+    </ul>
+
+
+</dd>
+</dl>
+
+
+</div> <!-- id="content" -->
+</div> <!-- id="main" -->
+<div id="about">
+<i>generated by <a href="http://github.com/stevedonovan/LDoc">LDoc 1.4.3</a></i>
+<i style="float:right;">Last updated 2016-06-10 09:31:28 </i>
+</div> <!-- id="about" -->
+</div> <!-- id="container" -->
+</body>
+</html>
