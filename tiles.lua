@@ -1,10 +1,20 @@
---===== BASE =====--
+--- Compositing API for Terminal Glasses.
+-- The Tiles API offers a new fundamental way of interacting with the Terminal Glasses drawing surface by allowing one to draw to subsurfaces called "tiles".
+-- @author <a href=https://github.com/blunty666>Blunty666</a> (code) 
+-- @author <a href=https://github.com/Fizzixnerd>Fizzixnerd</a> (docs)
+-- @copyright <a href=https://github.com/blunty666>Blunty666</a>
+-- @license <a href=https://opensource.org/licenses/MIT>MIT</a>
+
 local widths = {
 	[0]=0,8,8,8,8,8,8,8,8,8,8,8,8,8,8,8,8,8,8,8,8,8,8,8,8,8,8,8,8,8,8,
 	8,3,1,4,5,5,5,5,2,4,4,4,5,1,5,1,5,5,5,5,5,5,5,5,5,5,5,1,1,4,5,4,
 	5,6,5,5,5,5,5,5,5,5,3,5,5,5,5,5,5,5,5,5,5,5,5,5,5,5,5,5,3,5,3,5,5,
 	2,5,5,5,5,5,4,5,5,1,5,4,2,5,5,5,5,5,5,5,3,5,5,5,5,5,5,4,1,4,6,8,
 }
+--- Return the on-screen width of a string.
+-- @string str
+-- @raise error when str is not a string.
+-- @treturn int width
 function getStringWidth(str)
 	if type(str) ~= "string" then
 		error("getStringWidth: string expected", 2)
@@ -18,6 +28,13 @@ function getStringWidth(str)
 	return width
 end
 
+--- Return the longest length of a substring of `str' starting at
+-- `startPos' which will fit within a line of length `width'.
+-- @string str
+-- @number width
+-- @number startPos
+-- @raise error when str is not a string.
+-- @treturn int width
 function getMaxStringLength(str, width, startPos)
 	if type(str) ~= "string" then
 		error("getMaxStringLength: expected string, got "..type(str), 2)
@@ -29,6 +46,9 @@ function getMaxStringLength(str, width, startPos)
 	return endPos
 end
 
+--- Return a table containing the locations of the sides, as well as
+-- the width and height, of a bounding box for the points.
+-- @{point, ...} points
 local function findBounds(points)
 	local left, top, right, bottom = math.huge, math.huge, -math.huge, -math.huge
 	for _, point in ipairs(points) do
@@ -50,6 +70,7 @@ local function findBounds(points)
 	return {left = left, top = top, width = width, height = height, right = right, bottom = bottom}
 end
 
+--- Used to typecheck alignments
 local ALIGNMENT = {
 	HORIZONTAL = {
 		LEFT = true,
@@ -62,6 +83,9 @@ local ALIGNMENT = {
 		BOTTOM = true,
 	},
 }
+
+--- Contains functions for type-checking arguments.
+-- @see tiles.checkProperty
 local _checkProperty = {
 	name = function(value)
 		return value == nil or type(value) == "string"
@@ -143,11 +167,42 @@ local _checkProperty = {
 		return value == nil or type(value) == "function"
 	end,
 }
+
+--- Contains functions for type-checking arguments.
+-- If a function expects an argument of type `typename', then
+-- checkProperty[typename](val) returns true iff `val' is of type
+-- `typename'.
+-- @field name A Lua string or nil.
+-- @field number A Lua number.
+-- @field positive_number A _non-negative_ Lua number.
+-- @fixme positive_number lies about its name!
+-- @field string A Lua string.
+-- @field boolean A Lua boolean.
+-- @field alignment A valid pair of alignment specifiers.
+-- @field userdata Any value.
+-- @field function A Lua function.
+-- @field percent A Lua number between 0 and 1 (inclusive).
+-- @field alpha An integer between 0 and 255 (inclusive).
+-- @field colour An integer between 0x000000 and 0xFFFFFF (inclusive).
+-- @fixme alias `color' for 'muricans.
+-- @field gradient An integer equal to either 1 or 2.
+-- @field simplePoint A table which has fields `x' and `y' with values which are Lua numbers.
+-- @field complexPoint A `simplePoint' which optionally contains the fields `rgb' or `opacity' with values which are a `colour' and a `percent' respectively.
+-- @field simplePoints An array of `simplePoint' values.
+-- @field complexPoints An array of `complexPoint' values.
+-- @field meta An integer between 0 and 15 (inclusive).  Represents a Minecraft item meta value.
+-- @field surface A `surface' object as exposed by the Terminal Glasses API.
+-- @field capture A `capture' object as exposed by the Terminal Glasses API.
+-- @field bridge A wrapped Terminal Glasses Bridge (for example, the object returned by the call peripheral.wrap(sideOfBridge)).
+-- @field functionOrNil A Lua function or nil.
+-- @see tiles.SetAlignment
 checkProperty = {}
 for property, checker in pairs(_checkProperty) do
 	checkProperty[property] = checker
 end
 
+--- No idea.
+-- @todo What exactly do these do...?
 local formatPropertyIn = {
 	alignment = function(horizontal, vertical)
 		return {tostring(string.upper(horizontal)), tostring(string.upper(vertical))}
@@ -188,6 +243,9 @@ local degToRadConstant = math.pi/180
 local function degToRad(degree)
 	return degree*degToRadConstant
 end
+
+--- Each function returns the value of the specified property
+-- calculated with respect to a parent.
 local calculateProperty = {
 	X = function(parent, child)
 		local rotation = degToRad(parent.Rotation)
@@ -273,10 +331,15 @@ local calculateProperty = {
 
 --===== OBJECTS =====--
 
+--- Object
+-- Each object in this section is a wrapper for a drawable
+-- primitive of the Terminal Glasses API.
+
 local setObjectProperty = {}
 local drawObjectWithType = {}
 local objectMetatables = {}
 
+-- Metaprogramming magic below.
 do -- create default object setters
 	local simpleObjectProperties = {
 		"Color", "Color1", "Color2",
