@@ -1,5 +1,5 @@
 --- Compositing API for Terminal Glasses.
--- The Tiles API offers a new fundamental way of interacting with the Terminal Glasses drawing surface by allowing one to draw to subsurfaces called "tiles".
+-- The Tiles API offers a new fundamental way of interacting with the Terminal Glasses drawing surface by allowing one to draw to subsurfaces called "Tiles".  This allows for the modular and composable creation of graphical elements from smaller constituent parts, and to treat such compositions as a single entity in a rational manner.
 -- @author <a href=https://github.com/blunty666>Blunty666</a> (code) 
 -- @author <a href=https://github.com/Fizzixnerd>Fizzixnerd</a> (docs)
 -- @copyright <a href=https://github.com/blunty666>Blunty666</a>
@@ -170,7 +170,7 @@ local _checkProperty = {
 
 --- Contains functions for type-checking arguments.
 -- If a function expects an argument of type `typename', then
--- checkProperty[typename](val) returns true iff `val' is of type
+-- `checkProperty[typename](val)` returns true iff `val' is of type
 -- `typename'.
 -- @field name A Lua string or nil.
 -- @field number A Lua number.
@@ -195,7 +195,6 @@ local _checkProperty = {
 -- @field capture A `capture' object as exposed by the Terminal Glasses API.
 -- @field bridge A wrapped Terminal Glasses Bridge (for example, the object returned by the call peripheral.wrap(sideOfBridge)).
 -- @field functionOrNil A Lua function or nil.
--- @see tiles.SetAlignment
 checkProperty = {}
 for property, checker in pairs(_checkProperty) do
 	checkProperty[property] = checker
@@ -330,11 +329,6 @@ local calculateProperty = {
 }
 
 --===== OBJECTS =====--
-
---- Object
--- Each object in this section is a wrapper for a drawable
--- primitive of the Terminal Glasses API.
-
 local setObjectProperty = {}
 local drawObjectWithType = {}
 local objectMetatables = {}
@@ -401,6 +395,82 @@ do -- create default object setters
 	}
 end
 
+--- All Objects share these methods.
+-- Objects are the drawable things in the API.  Note that Objects in
+-- the same Tile _cannot_ share a name.
+-- @type Object
+
+--- Delete the Object and remove it from its parent Tile.
+-- @function Object:Delete
+-- @treturn bool success
+
+--- Return ID of Object.
+-- @function Object:GetID
+-- @treturn int id
+
+--- Return type of Object.
+-- @function Object:GetType
+-- @treturn string type
+
+--- Return parent Tile of Object.
+-- @function Object:GetTile
+-- @treturn tiles.Tile parent
+
+--- Return name of Object or nil if not named.
+-- @function Object:GetName
+-- @treturn ?string name
+
+--- Sets name of Object and return true, or return false if name was not set.  Passing nil will unname the Object.
+-- @function Object:SetName
+-- @tparam ?string name
+-- @treturn bool success
+
+--- Return the arbitrary userdata associated with the Object.
+-- @function Object:GetUserdata
+-- @treturn ?any data
+
+--- Set the arbitrary userdata associated with the Object.
+-- @function Object:SetUserdata
+-- @tparam ?any data
+-- @treturn bool success
+
+--- Set the anchoring of the Object.
+-- @function Object:SetObjectAnchor
+-- @tparam string horizontal One of "left", "middle", or "right".
+-- @tparam string vertical One of "top", "middle", or "bottom".
+
+--- Get the anchoring of the Object.
+-- @function Object:GetObjectAnchor
+-- @treturn string horizontal
+-- @treturn string vertical
+
+--- Set whether the Object can receive OnClick events.
+-- @function Object:SetClickable
+-- @bool isClickable
+-- @treturn bool success
+
+--- Get whether the Object can receive OnClick events.
+-- @function Object:GetClickable
+-- @treturn bool isClickable
+
+--- Set the rotation angle of the Object in degrees.
+-- @function Object:SetRotation
+-- @number angle
+-- @treturn bool success
+
+--- Get the rotation angle of the Object in degrees.
+-- @function Object:GetRotation
+-- @treturn number angle
+
+--- Set whether the Object is visible.
+-- @function Object:SetVisible
+-- @bool isVisible
+-- @treturn bool success
+
+--- Get whether the Object is visible.
+-- @function Object:GetVisible
+-- @treturn bool isVisible
+
 local baseObjectMethods = {
 	GetID = function(self)
 		return self.ID
@@ -411,7 +481,6 @@ local baseObjectMethods = {
 	GetTile = function(self)
 		return self.tile
 	end,
-	
 	GetName = function(self)
 		return self.Name
 	end,
@@ -461,7 +530,6 @@ local baseObjectMethods = {
 	end,
 }
 
--- here we define properties that are present across all objects
 local baseObjectProperties = {
 	ObjectAnchor = "alignment",
 	Clickable = "boolean", Rotation = "number",

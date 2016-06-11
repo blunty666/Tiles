@@ -3,7 +3,7 @@
 <html>
 <meta http-equiv="Content-Type" content="text/html; charset=UTF-8"/>
 <head>
-    <title>Reference</title>
+    <title>Tiles Documentation</title>
     <link rel="stylesheet" href="ldoc.css" type="text/css" />
 </head>
 <body>
@@ -31,6 +31,7 @@
 <ul>
 <li><a href="#Functions">Functions</a></li>
 <li><a href="#Tables">Tables</a></li>
+<li><a href="#Class_Object">Class Object </a></li>
 </ul>
 
 
@@ -46,7 +47,7 @@
 <h1>Module <code>tiles</code></h1>
 <p>Compositing API for Terminal Glasses.</p>
 <p>
- The Tiles API offers a new fundamental way of interacting with the Terminal Glasses drawing surface by allowing one to draw to subsurfaces called "tiles".</p>
+ The Tiles API offers a new fundamental way of interacting with the Terminal Glasses drawing surface by allowing one to draw to subsurfaces called "Tiles".  This allows for the modular and composable creation of graphical elements from smaller constituent parts, and to treat such compositions as a single entity in a rational manner.</p>
     <h3>Info:</h3>
     <ul>
         <li><strong>Copyright</strong>: <a href=https://github.com/blunty666>Blunty666</a></li>
@@ -72,6 +73,73 @@
 	<tr>
 	<td class="name" nowrap><a href="#checkProperty">checkProperty</a></td>
 	<td class="summary">Contains functions for type-checking arguments.</td>
+	</tr>
+</table>
+<h2><a href="#Class_Object">Class Object </a></h2>
+<table class="function_list">
+	<tr>
+	<td class="name" nowrap><a href="#Object:Delete">Object:Delete ()</a></td>
+	<td class="summary">Delete the Object and remove it from its parent Tile.</td>
+	</tr>
+	<tr>
+	<td class="name" nowrap><a href="#Object:GetID">Object:GetID ()</a></td>
+	<td class="summary">Return ID of Object.</td>
+	</tr>
+	<tr>
+	<td class="name" nowrap><a href="#Object:GetType">Object:GetType ()</a></td>
+	<td class="summary">Return type of Object.</td>
+	</tr>
+	<tr>
+	<td class="name" nowrap><a href="#Object:GetTile">Object:GetTile ()</a></td>
+	<td class="summary">Return parent Tile of Object.</td>
+	</tr>
+	<tr>
+	<td class="name" nowrap><a href="#Object:GetName">Object:GetName ()</a></td>
+	<td class="summary">Return name of Object or nil if not named.</td>
+	</tr>
+	<tr>
+	<td class="name" nowrap><a href="#Object:SetName">Object:SetName (name)</a></td>
+	<td class="summary">Sets name of Object and return true, or return false if name was not set.</td>
+	</tr>
+	<tr>
+	<td class="name" nowrap><a href="#Object:GetUserdata">Object:GetUserdata ()</a></td>
+	<td class="summary">Return the arbitrary userdata associated with the Object.</td>
+	</tr>
+	<tr>
+	<td class="name" nowrap><a href="#Object:SetUserdata">Object:SetUserdata (data)</a></td>
+	<td class="summary">Set the arbitrary userdata associated with the Object.</td>
+	</tr>
+	<tr>
+	<td class="name" nowrap><a href="#Object:SetObjectAnchor">Object:SetObjectAnchor (horizontal, vertical)</a></td>
+	<td class="summary">Set the anchoring of the Object.</td>
+	</tr>
+	<tr>
+	<td class="name" nowrap><a href="#Object:GetObjectAnchor">Object:GetObjectAnchor ()</a></td>
+	<td class="summary">Get the anchoring of the Object.</td>
+	</tr>
+	<tr>
+	<td class="name" nowrap><a href="#Object:SetClickable">Object:SetClickable (isClickable)</a></td>
+	<td class="summary">Set whether the Object can receive OnClick events.</td>
+	</tr>
+	<tr>
+	<td class="name" nowrap><a href="#Object:GetClickable">Object:GetClickable ()</a></td>
+	<td class="summary">Get whether the Object can receive OnClick events.</td>
+	</tr>
+	<tr>
+	<td class="name" nowrap><a href="#Object:SetRotation">Object:SetRotation (angle)</a></td>
+	<td class="summary">Set the rotation angle of the Object in degrees.</td>
+	</tr>
+	<tr>
+	<td class="name" nowrap><a href="#Object:GetRotation">Object:GetRotation ()</a></td>
+	<td class="summary">Get the rotation angle of the Object in degrees.</td>
+	</tr>
+	<tr>
+	<td class="name" nowrap><a href="#Object:SetVisible">Object:SetVisible (isVisible)</a></td>
+	<td class="summary">Set whether the Object is visible.</td>
+	</tr>
+	<tr>
+	<td class="name" nowrap><a href="#Object:GetVisible">Object:GetVisible ()</a></td>
+	<td class="summary">Get whether the Object is visible.</td>
 	</tr>
 </table>
 
@@ -160,7 +228,7 @@
     <dd>
     Contains functions for type-checking arguments.
  If a function expects an argument of type `typename', then
- checkProperty[typename](val) returns true iff `val' is of type
+ `checkProperty[typename](val)` returns true iff `val' is of type
  `typename'.
 
 
@@ -233,9 +301,378 @@
 
 
 
-    <h3>See also:</h3>
+
+
+</dd>
+</dl>
+    <h2 class="section-header has-description"><a name="Class_Object"></a>Class Object </h2>
+
+          <div class="section-description">
+          All Objects share these methods.
+ Objects are the drawable things in the API.  Note that Objects in
+ the same Tile _cannot_ share a name.
+          </div>
+    <dl class="function">
+    <dt>
+    <a name = "Object:Delete"></a>
+    <strong>Object:Delete ()</strong>
+    </dt>
+    <dd>
+    Delete the Object and remove it from its parent Tile.
+
+
+
+    <h3>Returns:</h3>
+    <ol>
+
+           <span class="types"><span class="type">bool</span></span>
+        success
+    </ol>
+
+
+
+
+</dd>
+    <dt>
+    <a name = "Object:GetID"></a>
+    <strong>Object:GetID ()</strong>
+    </dt>
+    <dd>
+    Return ID of Object.
+
+
+
+    <h3>Returns:</h3>
+    <ol>
+
+           <span class="types"><span class="type">int</span></span>
+        id
+    </ol>
+
+
+
+
+</dd>
+    <dt>
+    <a name = "Object:GetType"></a>
+    <strong>Object:GetType ()</strong>
+    </dt>
+    <dd>
+    Return type of Object.
+
+
+
+    <h3>Returns:</h3>
+    <ol>
+
+           <span class="types"><a class="type" href="http://www.lua.org/manual/5.1/manual.html#5.4">string</a></span>
+        type
+    </ol>
+
+
+
+
+</dd>
+    <dt>
+    <a name = "Object:GetTile"></a>
+    <strong>Object:GetTile ()</strong>
+    </dt>
+    <dd>
+    Return parent Tile of Object.
+
+
+
+    <h3>Returns:</h3>
+    <ol>
+
+           <span class="types"><span class="type">tiles.Tile</span></span>
+        parent
+    </ol>
+
+
+
+
+</dd>
+    <dt>
+    <a name = "Object:GetName"></a>
+    <strong>Object:GetName ()</strong>
+    </dt>
+    <dd>
+    Return name of Object or nil if not named.
+
+
+
+    <h3>Returns:</h3>
+    <ol>
+
+           <span class="types">optional <a class="type" href="http://www.lua.org/manual/5.1/manual.html#5.4">string</a></span>
+        name
+    </ol>
+
+
+
+
+</dd>
+    <dt>
+    <a name = "Object:SetName"></a>
+    <strong>Object:SetName (name)</strong>
+    </dt>
+    <dd>
+    Sets name of Object and return true, or return false if name was not set.   Passing nil will unname the Object.
+
+
+    <h3>Parameters:</h3>
     <ul>
+        <li><span class="parameter">name</span>
+            <span class="types">optional <a class="type" href="http://www.lua.org/manual/5.1/manual.html#5.4">string</a></span>
+
+        </li>
     </ul>
+
+    <h3>Returns:</h3>
+    <ol>
+
+           <span class="types"><span class="type">bool</span></span>
+        success
+    </ol>
+
+
+
+
+</dd>
+    <dt>
+    <a name = "Object:GetUserdata"></a>
+    <strong>Object:GetUserdata ()</strong>
+    </dt>
+    <dd>
+    Return the arbitrary userdata associated with the Object.
+
+
+
+    <h3>Returns:</h3>
+    <ol>
+
+           <span class="types">optional <span class="type">any</span></span>
+        data
+    </ol>
+
+
+
+
+</dd>
+    <dt>
+    <a name = "Object:SetUserdata"></a>
+    <strong>Object:SetUserdata (data)</strong>
+    </dt>
+    <dd>
+    Set the arbitrary userdata associated with the Object.
+
+
+    <h3>Parameters:</h3>
+    <ul>
+        <li><span class="parameter">data</span>
+            <span class="types">optional <span class="type">any</span></span>
+
+        </li>
+    </ul>
+
+    <h3>Returns:</h3>
+    <ol>
+
+           <span class="types"><span class="type">bool</span></span>
+        success
+    </ol>
+
+
+
+
+</dd>
+    <dt>
+    <a name = "Object:SetObjectAnchor"></a>
+    <strong>Object:SetObjectAnchor (horizontal, vertical)</strong>
+    </dt>
+    <dd>
+    Set the anchoring of the Object.
+
+
+    <h3>Parameters:</h3>
+    <ul>
+        <li><span class="parameter">horizontal</span>
+            <span class="types"><a class="type" href="http://www.lua.org/manual/5.1/manual.html#5.4">string</a></span>
+         One of "left", "middle", or "right".
+        </li>
+        <li><span class="parameter">vertical</span>
+            <span class="types"><a class="type" href="http://www.lua.org/manual/5.1/manual.html#5.4">string</a></span>
+         One of "top", "middle", or "bottom".
+        </li>
+    </ul>
+
+
+
+
+
+</dd>
+    <dt>
+    <a name = "Object:GetObjectAnchor"></a>
+    <strong>Object:GetObjectAnchor ()</strong>
+    </dt>
+    <dd>
+    Get the anchoring of the Object.
+
+
+
+    <h3>Returns:</h3>
+    <ol>
+        <li>
+           <span class="types"><a class="type" href="http://www.lua.org/manual/5.1/manual.html#5.4">string</a></span>
+        horizontal</li>
+        <li>
+           <span class="types"><a class="type" href="http://www.lua.org/manual/5.1/manual.html#5.4">string</a></span>
+        vertical</li>
+    </ol>
+
+
+
+
+</dd>
+    <dt>
+    <a name = "Object:SetClickable"></a>
+    <strong>Object:SetClickable (isClickable)</strong>
+    </dt>
+    <dd>
+    Set whether the Object can receive OnClick events.
+
+
+    <h3>Parameters:</h3>
+    <ul>
+        <li><span class="parameter">isClickable</span>
+            <span class="types"><span class="type">bool</span></span>
+
+        </li>
+    </ul>
+
+    <h3>Returns:</h3>
+    <ol>
+
+           <span class="types"><span class="type">bool</span></span>
+        success
+    </ol>
+
+
+
+
+</dd>
+    <dt>
+    <a name = "Object:GetClickable"></a>
+    <strong>Object:GetClickable ()</strong>
+    </dt>
+    <dd>
+    Get whether the Object can receive OnClick events.
+
+
+
+    <h3>Returns:</h3>
+    <ol>
+
+           <span class="types"><span class="type">bool</span></span>
+        isClickable
+    </ol>
+
+
+
+
+</dd>
+    <dt>
+    <a name = "Object:SetRotation"></a>
+    <strong>Object:SetRotation (angle)</strong>
+    </dt>
+    <dd>
+    Set the rotation angle of the Object in degrees.
+
+
+    <h3>Parameters:</h3>
+    <ul>
+        <li><span class="parameter">angle</span>
+            <span class="types"><span class="type">number</span></span>
+
+        </li>
+    </ul>
+
+    <h3>Returns:</h3>
+    <ol>
+
+           <span class="types"><span class="type">bool</span></span>
+        success
+    </ol>
+
+
+
+
+</dd>
+    <dt>
+    <a name = "Object:GetRotation"></a>
+    <strong>Object:GetRotation ()</strong>
+    </dt>
+    <dd>
+    Get the rotation angle of the Object in degrees.
+
+
+
+    <h3>Returns:</h3>
+    <ol>
+
+           <span class="types"><span class="type">number</span></span>
+        angle
+    </ol>
+
+
+
+
+</dd>
+    <dt>
+    <a name = "Object:SetVisible"></a>
+    <strong>Object:SetVisible (isVisible)</strong>
+    </dt>
+    <dd>
+    Set whether the Object is visible.
+
+
+    <h3>Parameters:</h3>
+    <ul>
+        <li><span class="parameter">isVisible</span>
+            <span class="types"><span class="type">bool</span></span>
+
+        </li>
+    </ul>
+
+    <h3>Returns:</h3>
+    <ol>
+
+           <span class="types"><span class="type">bool</span></span>
+        success
+    </ol>
+
+
+
+
+</dd>
+    <dt>
+    <a name = "Object:GetVisible"></a>
+    <strong>Object:GetVisible ()</strong>
+    </dt>
+    <dd>
+    Get whether the Object is visible.
+
+
+
+    <h3>Returns:</h3>
+    <ol>
+
+           <span class="types"><span class="type">bool</span></span>
+        isVisible
+    </ol>
+
+
 
 
 </dd>
@@ -246,7 +683,7 @@
 </div> <!-- id="main" -->
 <div id="about">
 <i>generated by <a href="http://github.com/stevedonovan/LDoc">LDoc 1.4.3</a></i>
-<i style="float:right;">Last updated 2016-06-10 09:31:28 </i>
+<i style="float:right;">Last updated 2016-06-11 14:46:16 </i>
 </div> <!-- id="about" -->
 </div> <!-- id="container" -->
 </body>
