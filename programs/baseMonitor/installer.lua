@@ -28,34 +28,6 @@ else
 	fileList = {}
 end
 
-local peripheralListHandle = http.get(table.concat({mainURL, "Tiles", "master", "programs/baseMonitor/peripheralList"}, "/"))
-if peripheralListHandle then
-	local peripheralType = peripheralListHandle.readLine()
-	while peripheralType do
-		if not updateOnly or not fs.exists(fs.combine(saveDir, "peripherals/"..peripheralType)) then
-			fileList["peripherals/"..peripheralType] = {"Tiles", "programs/baseMonitor/peripherals/"..peripheralType..".lua"}
-		end
-		peripheralType = peripheralListHandle.readLine()
-	end
-	peripheralListHandle.close()
-else
-	printError("Could not download peripheralList")
-end
-
-local sourceListHandle = http.get(table.concat({mainURL, "Tiles", "master", "programs/baseMonitor/sourceList"}, "/"))
-if sourceListHandle then
-	local sourceType = sourceListHandle.readLine()
-	while sourceType do
-		if not updateOnly or not fs.exists(fs.combine(saveDir, "sources/"..sourceType)) then
-			fileList["sources/"..sourceType] = {"Tiles", "programs/baseMonitor/sources/"..sourceType..".lua"}
-		end
-		sourceType = sourceListHandle.readLine()
-	end
-	sourceListHandle.close()
-else
-	printError("Could not download sourceList")
-end
-
 local function get(url)
 	local response = http.get(url)			
 	if response then
@@ -64,6 +36,52 @@ local function get(url)
 		return fileData
 	end
 	return false
+end
+
+local function getDirectoryContents(author, repository, branch, directory, filesOnly)
+	local fType, fPath, fName = {}, {}, {}
+	local response = get("https://api.github.com/repos/"..author.."/"..repository.."/contents/"..directory.."?ref="..branch)
+	if response then
+		if response ~= nil then
+			for str in response:gmatch('"type":%s*"(%w+)",') do table.insert(fType, str) end
+			for str in response:gmatch('"path":%s*"([^\"]+)",') do table.insert(fPath, str) end
+			for str in response:gmatch('"name":%s*"([^\"]+)",') do table.insert(fName, str) end
+		end
+	else
+		printError("Can't fetch repository information")
+		return nil
+	end
+	local directoryContents = {}
+	for i=1, #fType do
+		if filesOnly ~= true or fType[i] ~= "dir" then
+			directoryContents[i] = {type = fType[i], path = fPath[i], name = fName[i]}
+		end
+	end
+	return directoryContents
+end
+
+local peripheralList = getDirectoryContents(githubUsername, "Tiles", "master", "programs/baseMonitor/peripherals", true)
+if peripheralList then
+	for _, file in ipairs(peripheralList) do
+		local peripheralType = string.gsub(file.name, ".lua$", "")
+		if not updateOnly or not fs.exists(fs.combine(saveDir, "peripherals/"..peripheralType)) then
+			fileList["peripherals/"..peripheralType] = {"Tiles", file.path}
+		end
+	end
+else
+	printError("Could not download peripheralList")
+end
+
+local sourceList = getDirectoryContents(githubUsername, "Tiles", "master", "programs/baseMonitor/sources", true)
+if sourceList then
+	for _, file in ipairs(sourceList) do
+		local sourceType = string.gsub(file.name, ".lua$", "")
+		if not updateOnly or not fs.exists(fs.combine(saveDir, "sources/"..sourceType)) then
+			fileList["sources/"..sourceType] = {"Tiles", file.path}
+		end
+	end
+else
+	printError("Could not download sourceList")
 end
 
 local function save(fileData, path)
