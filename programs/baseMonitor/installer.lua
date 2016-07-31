@@ -22,7 +22,7 @@ if not updateOnly then
 		["apis/tiles"] = {"Tiles", "tiles.lua"},
 		["apis/guiTiles"] = {"Tiles", "apis/guiTiles.lua"},
 		["apis/advancedTiles"] = {"Tiles", "apis/advancedTiles.lua"},
-		["apis/remotePeripheralClient"] = {"CC-Programs-and-APIs", "remotePeripheral/remotePeripheralClient"},
+		["apis/remotePeripheralClient"] = {"CC-Programs-and-APIs", "remotePeripheral/remotePeripheralClient.lua"},
 	}
 else
 	fileList = {}
