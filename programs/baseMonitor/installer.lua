@@ -104,10 +104,10 @@ for localPath, remotePathDetails in pairs(fileList) do
 			if save(fileData, path) then
 				print("Download successful: ", localPath)
 			else
-				print("Save failed: ", localPath)
+				printError("Save failed: ", localPath)
 			end
 		else
-			print("Download failed: ", localPath)
+			printError("Download failed: ", localPath)
 		end
 	else
 		print("Skipping: ", localPath)
