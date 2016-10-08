@@ -202,7 +202,6 @@ local function newPlayerSurfaceHandler(playerUUID, surfaceHandler)
 				nullClickButton = event[5]
 			end,
 			glasses_custom_event = function(event)
-				print(event[5])
 				-- glasses_custom_event - "unknown" - windowID - playerUUID - {event details (...)}
 				if activeWindowID ~= event[3] then
 					windows.toFront(event[3])
