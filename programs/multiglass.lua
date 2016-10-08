@@ -7,21 +7,70 @@ else
 	error("could not find bridge on side: "..tostring(tArgs[1]))
 end
 
-if not tiles then
-	if not os.loadAPI("tiles") then
-		error("could not load API: tiles")
-	end
-end
+do -- API installing / loading
+	local program = fs.getDir(shell.getRunningProgram())
 
-if not guiTiles then
-	if not os.loadAPI("guiTiles") then
-		error("could not load API: guiTiles")
+	local function get(url)
+		local response = http.get(url)			
+		if response then
+			local fileData = response.readAll()
+			response.close()
+			return fileData
+		end
+		return false
 	end
-end
 
-if not glassWindow then
-	if not os.loadAPI("glassWindow") then
-		error("could not load API: glassWindow")
+	local function save(fileData, path)
+		local handle = fs.open(path, "w")
+		if handle then
+			handle.write(fileData)
+			handle.close()
+			return true
+		else
+			return false
+		end
+	end
+
+	local function fetch(url, path)
+		local fileData = get(url)			
+		if fileData then
+			if save(fileData, path) then
+				return true
+			else
+				printError("Save failed: ", path)
+			end
+		else
+			printError("Download failed: ", url)
+		end
+		return false
+	end
+
+	local apiList = {
+		{"tiles", "https://raw.githubusercontent.com/blunty666/Tiles/master/tiles.lua"},
+		{"guiTiles", "https://raw.githubusercontent.com/blunty666/Tiles/master/apis/guiTiles.lua"},
+		{"glassWindow", "https://raw.githubusercontent.com/blunty666/Tiles/master/apis/glassWindow.lua"},
+	}
+
+	for _, api in ipairs(apiList) do
+		local apiName, apiURL = unpack(api)
+		local apiPath = fs.combine(program, apiName)
+		if not _G[apiName] then -- api not loaded already
+			if not fs.exists(apiPath) then -- api file does not exist
+				print("Downloading API: "..apiName)
+				if not fetch(apiURL, apiPath) then
+					printError("Could not load API: "..apiName)
+					return
+				end
+			elseif fs.isDir(apiPath) then -- there is an invalid directory
+				printError("Invalid directory at: "..apiPath)
+				printError("Could not load API: "..apiName)
+				return
+			end
+			if not os.loadAPI(apiPath) then
+				printError("Could not load API: "..apiName)
+				return
+			end
+		end
 	end
 end
 
