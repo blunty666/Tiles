@@ -260,7 +260,11 @@ local function newPlayerSurfaceHandler(playerUUID, surfaceHandler)
 				if threadID then
 					local thread = threads.list[threadID]
 					if thread then
-						threads.resume(thread, unpack(event, 5))
+						if event[5] == "close" then
+							thread.running = false
+						else
+							threads.resume(thread, unpack(event, 5))
+						end
 					end
 				end
 			end,

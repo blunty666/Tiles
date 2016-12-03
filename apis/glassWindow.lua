@@ -557,25 +557,34 @@ function new(tile, playerUUID, ID, xOffset, yOffset, zOffset, startWidth, startH
 	end
 	opacityButton:SetOnRelease(onOpacityButtonRelease)
 
-	local terminateText = toolbar:AddText(25, -5, "T", 0xf2b233)
-	terminateText:SetZ(1)
-	terminateText:SetObjectAnchor("MIDDLE", "MIDDLE")
-	terminateText:SetClickable(false)
-	local terminateBG = toolbar:AddBox(20, -10, 10, 10, 0xcc4c4c, 1)
-	local function terminateClick()
-		terminateBG:SetColor(0xdede6c)
-		terminateBG:SetUserdata(os.clock())
+	local terminateButton = guiTiles.addButton(toolbar, 20, -10, 0, "T", 0xcc4c4c, 0xf2b233, 0xdede6c, 0xf2b233, 10, 10)
+	local terminateTimer = false
+	local function onTerminateButtonClick()
+		terminateTimer = os.clock()
 	end
-	local function terminateRelease()
-		terminateBG:SetColor(0xcc4c4c)
-		local terminateClickTime = terminateBG:GetUserdata()
-		if terminateClickTime and os.clock() - terminateClickTime > 0.5 then
+	local function onTerminateButtonRelease()
+		if terminateTimer and os.clock() - terminateTimer > 0.5 then
 			os.queueEvent("glasses_custom_event", "unknown", ID, playerUUID, "terminate")
+			terminateTimer = false
 		end
 	end
-	terminateBG:SetOnClick(terminateClick)
-	terminateBG:SetOnRelease(terminateRelease)
-	
+	terminateButton:SetOnClick(onTerminateButtonClick)
+	terminateButton:SetOnRelease(onTerminateButtonRelease)
+
+	local closeButton = guiTiles.addButton(toolbar, 30, -10, 0, "X", 0xffffff, 0x000000, 0xcc4c4c, 0x000000, 10, 10)
+	local closeTimer = false
+	local function onCloseButtonClick()
+		closeTimer = os.clock()
+	end
+	local function onCloseButtonRelease()
+		if closeTimer and os.clock() - closeTimer > 0.5 then
+			os.queueEvent("glasses_custom_event", "unknown", ID, playerUUID, "close")
+			closeTimer = false
+		end
+	end
+	closeButton:SetOnClick(onCloseButtonClick)
+	closeButton:SetOnRelease(onCloseButtonRelease)
+
 	local sizeModifier = toolbar:AddSubTile(51*6, 19*9, 1)
 	
 	local sizeModifierText = sizeModifier:AddText(0, 0, "x", 0x000000)
