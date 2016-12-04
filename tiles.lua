@@ -1,10 +1,20 @@
---===== BASE =====--
+--- Compositing API for Terminal Glasses.
+-- The Tiles API offers a new fundamental way of interacting with the Terminal Glasses drawing surface by allowing one to draw to subsurfaces called "Tiles".  This allows for the modular and composable creation of graphical elements from smaller constituent parts, and to treat such compositions as a single entity in a rational manner.
+-- @author <a href=https://github.com/blunty666>Blunty666</a> (code) 
+-- @author <a href=https://github.com/Fizzixnerd>Fizzixnerd</a> (docs)
+-- @copyright <a href=https://github.com/blunty666>Blunty666</a>
+-- @license <a href=https://opensource.org/licenses/MIT>MIT</a>
+
 local widths = {
 	[0]=0,8,8,8,8,8,8,8,8,8,8,8,8,8,8,8,8,8,8,8,8,8,8,8,8,8,8,8,8,8,8,
 	8,3,1,4,5,5,5,5,2,4,4,4,5,1,5,1,5,5,5,5,5,5,5,5,5,5,5,1,1,4,5,4,
 	5,6,5,5,5,5,5,5,5,5,3,5,5,5,5,5,5,5,5,5,5,5,5,5,5,5,5,5,3,5,3,5,5,
 	2,5,5,5,5,5,4,5,5,1,5,4,2,5,5,5,5,5,5,5,3,5,5,5,5,5,5,4,1,4,6,8,
 }
+--- Return the on-screen width of a string.
+-- @string str
+-- @raise error when str is not a string.
+-- @treturn int width
 function getStringWidth(str)
 	if type(str) ~= "string" then
 		error("getStringWidth: string expected", 2)
@@ -18,6 +28,13 @@ function getStringWidth(str)
 	return width
 end
 
+--- Return the longest length of a substring of `str' starting at
+-- `startPos' which will fit within a line of length `width'.
+-- @string str
+-- @number width
+-- @number startPos
+-- @raise error when str is not a string.
+-- @treturn int width
 function getMaxStringLength(str, width, startPos)
 	if type(str) ~= "string" then
 		error("getMaxStringLength: expected string, got "..type(str), 2)
@@ -29,6 +46,9 @@ function getMaxStringLength(str, width, startPos)
 	return endPos
 end
 
+--- Return a table containing the locations of the sides, as well as
+-- the width and height, of a bounding box for the points.
+-- @{point, ...} points
 local function findBounds(points)
 	local left, top, right, bottom = math.huge, math.huge, -math.huge, -math.huge
 	for _, point in ipairs(points) do
@@ -50,6 +70,7 @@ local function findBounds(points)
 	return {left = left, top = top, width = width, height = height, right = right, bottom = bottom}
 end
 
+--- Used to typecheck alignments
 local ALIGNMENT = {
 	HORIZONTAL = {
 		LEFT = true,
@@ -62,6 +83,9 @@ local ALIGNMENT = {
 		BOTTOM = true,
 	},
 }
+
+--- Contains functions for type-checking arguments.
+-- @see tiles.checkProperty
 local _checkProperty = {
 	name = function(value)
 		return value == nil or type(value) == "string"
@@ -143,11 +167,41 @@ local _checkProperty = {
 		return value == nil or type(value) == "function"
 	end,
 }
+
+--- Contains functions for type-checking arguments.
+-- If a function expects an argument of type `typename', then
+-- `checkProperty[typename](val)` returns true iff `val' is of type
+-- `typename'.
+-- @field name A Lua string or nil.
+-- @field number A Lua number.
+-- @field positive_number A _non-negative_ Lua number.
+-- @fixme positive_number lies about its name!
+-- @field string A Lua string.
+-- @field boolean A Lua boolean.
+-- @field alignment A valid pair of alignment specifiers.
+-- @field userdata Any value.
+-- @field function A Lua function.
+-- @field percent A Lua number between 0 and 1 (inclusive).
+-- @field alpha An integer between 0 and 255 (inclusive).
+-- @field colour An integer between 0x000000 and 0xFFFFFF (inclusive).
+-- @fixme alias `color' for 'muricans.
+-- @field gradient An integer equal to either 1 or 2.
+-- @field simplePoint A table which has fields `x' and `y' with values which are Lua numbers.
+-- @field complexPoint A `simplePoint' which optionally contains the fields `rgb' or `opacity' with values which are a `colour' and a `percent' respectively.
+-- @field simplePoints An array of `simplePoint' values.
+-- @field complexPoints An array of `complexPoint' values.
+-- @field meta An integer between 0 and 15 (inclusive).  Represents a Minecraft item meta value.
+-- @field surface A `surface' object as exposed by the Terminal Glasses API.
+-- @field capture A `capture' object as exposed by the Terminal Glasses API.
+-- @field bridge A wrapped Terminal Glasses Bridge (for example, the object returned by the call peripheral.wrap(sideOfBridge)).
+-- @field functionOrNil A Lua function or nil.
 checkProperty = {}
 for property, checker in pairs(_checkProperty) do
 	checkProperty[property] = checker
 end
 
+--- No idea.
+-- @todo What exactly do these do...?
 local formatPropertyIn = {
 	alignment = function(horizontal, vertical)
 		return {tostring(string.upper(horizontal)), tostring(string.upper(vertical))}
@@ -188,6 +242,9 @@ local degToRadConstant = math.pi/180
 local function degToRad(degree)
 	return degree*degToRadConstant
 end
+
+--- Each function returns the value of the specified property
+-- calculated with respect to a parent.
 local calculateProperty = {
 	X = function(parent, child)
 		local rotation = degToRad(parent.Rotation)
@@ -272,11 +329,11 @@ local calculateProperty = {
 }
 
 --===== OBJECTS =====--
-
 local setObjectProperty = {}
 local drawObjectWithType = {}
 local objectMetatables = {}
 
+-- Metaprogramming magic below.
 do -- create default object setters
 	local simpleObjectProperties = {
 		"Color", "Color1", "Color2",
@@ -338,6 +395,167 @@ do -- create default object setters
 	}
 end
 
+--- All Objects share these methods.
+-- Objects are the drawable things in the API.  Note that Objects in
+-- the same Tile _cannot_ share a name.
+-- @type Object
+-- @see Box
+-- @see Fluid
+-- @see GradientBox
+-- @see GradientLine
+
+--- Delete the Object and remove it from its parent Tile.
+-- @function Object:Delete
+-- @treturn bool success
+
+--- Return ID of Object.
+-- @function Object:GetID
+-- @treturn int id
+
+--- Return type of Object.
+-- @function Object:GetType
+-- @treturn string type
+
+--- Return parent Tile of Object.
+-- @function Object:GetTile
+-- @treturn tiles.Tile parent
+
+--- Return name of Object or nil if not named.
+-- @function Object:GetName
+-- @treturn ?string name
+
+--- Sets name of Object and return true, or return false if name was not set.  Passing nil will unname the Object.
+-- @function Object:SetName
+-- @tparam ?string name
+-- @treturn bool success
+
+--- Return the arbitrary userdata associated with the Object.
+-- @function Object:GetUserdata
+-- @treturn ?any data
+
+--- Set the arbitrary userdata associated with the Object.
+-- @function Object:SetUserdata
+-- @tparam ?any data
+-- @treturn bool success
+
+--- Set the anchoring of the Object.
+-- @function Object:SetObjectAnchor
+-- @tparam string horizontal One of "left", "middle", or "right".
+-- @tparam string vertical One of "top", "middle", or "bottom".
+
+--- Return the anchoring of the Object.
+-- @function Object:GetObjectAnchor
+-- @treturn string horizontal
+-- @treturn string vertical
+
+--- Set whether the Object can receive OnClick events.
+-- @function Object:SetClickable
+-- @bool isClickable
+-- @treturn bool success
+
+--- Return whether the Object can receive OnClick events.
+-- @function Object:GetClickable
+-- @treturn bool isClickable
+
+--- Set the rotation angle of the Object in degrees.
+-- @function Object:SetRotation
+-- @number angle
+-- @treturn bool success
+
+--- Return the rotation angle of the Object in degrees.
+-- @function Object:GetRotation
+-- @treturn number angle
+
+--- Set whether the Object is visible.
+-- @function Object:SetVisible
+-- @bool isVisible
+-- @treturn bool success
+
+--- Return whether the Object is visible.
+-- @function Object:GetVisible
+-- @treturn bool isVisible
+
+--- Set the Z coordinate of the Object.
+-- @function Object:SetZ
+-- @number z
+-- @treturn bool success
+
+--- Return the Z coordinate of the Object.
+-- @function Object:GetZ
+-- @treturn number z
+
+--- Set the callback for when the Object is clicked.  Pass nil to remove the callback.
+-- @function Object:SetOnClick
+-- @tparam ?func callback
+-- @treturn bool success
+
+--- Return the callback for when the Object is clicked.  Return nil if no such callback is set.
+-- @function Object:GetOnClick
+-- @treturn ?func callback
+
+--- Set the callback for when the Object is unclicked.  Pass nil to remove the callback.
+-- @function Object:SetOnRelease
+-- @tparam ?func callback
+-- @treturn bool success
+
+--- Return the callback for when the Object is unclicked.  Return nil if no such callback is set.
+-- @function Object:GetOnRelease
+-- @treturn ?func callback
+
+--- Set the callback for when the Object is dragged.  Pass nil to remove the callback.
+-- @function Object:SetOnDrag
+-- @tparam ?func callback
+-- @treturn bool success
+
+--- Return the callback for when the Object is dragged.  Return nil if no such callback is set.
+-- @function Object:GetOnDrag
+-- @treturn ?func callback
+
+--- Set the callback for when the Object is scrolled.  Pass nil to remove the callback.
+-- @function Object:SetOnScroll
+-- @tparam ?func callback
+-- @treturn bool success
+
+--- Return the callback for when the Object is scrolled.  Return nil if no such callback is set.
+-- @function Object:GetOnScroll
+-- @treturn ?func callback
+
+--- Set the callback for when the Object has a key pressed on it.  Pass nil to remove the callback.
+-- @function Object:SetOnKeyDown
+-- @tparam ?func callback
+-- @treturn bool success
+
+--- Return the callback for when the Object has a key pressed on it.  Return nil if no such callback is set.
+-- @function Object:GetOnKeyDown
+-- @treturn ?func callback
+
+--- Set the callback for when the Object has a key unpressed on it.  Pass nil to remove the callback.
+-- @function Object:SetOnKeyUp
+-- @tparam ?func callback
+-- @treturn bool success
+
+--- Return the callback for when the Object has a key unpressed on it.  Return nil if no such callback is set.
+-- @function Object:GetOnKeyUp
+-- @treturn ?func callback
+
+--- Set the callback for when the Object is selected.  Pass nil to remove the callback.
+-- @function Object:SetOnSelect
+-- @tparam ?func callback
+-- @treturn bool success
+
+--- Return the callback for when the Object is selected.  Return nil if no such callback is set.
+-- @function Object:GetOnSelect
+-- @treturn ?func callback
+
+--- Set the callback for when the Object is deselected.  Pass nil to remove the callback.
+-- @function Object:SetOnDeselect
+-- @tparam ?func callback
+-- @treturn bool success
+
+--- Return the callback for when the Object is deselected.  Return nil if no such callback is set.
+-- @function Object:GetOnDeselect
+-- @treturn ?func callback
+
 local baseObjectMethods = {
 	GetID = function(self)
 		return self.ID
@@ -348,7 +566,6 @@ local baseObjectMethods = {
 	GetTile = function(self)
 		return self.tile
 	end,
-	
 	GetName = function(self)
 		return self.Name
 	end,
@@ -398,7 +615,6 @@ local baseObjectMethods = {
 	end,
 }
 
--- here we define properties that are present across all objects
 local baseObjectProperties = {
 	ObjectAnchor = "alignment",
 	Clickable = "boolean", Rotation = "number",
@@ -470,7 +686,285 @@ local function setPoints(tile, object)
 	end
 end
 
--- here we create the templates for each object and specify and special functions
+--- A colored box Object.
+-- @type Box
+-- @see Tile:AddBox
+-- @see Object
+
+--- Set the X coordinate of the Box.
+-- @function Box:SetX
+-- @number x
+-- @treturn bool success
+
+--- Get the X coordinate of the Box.
+-- @function Box:GetX
+-- @treturn number x
+
+--- Set the Y coordinate of the Box.
+-- @function Box:SetY
+-- @number y
+-- @treturn bool success
+
+--- Get the Y coordinate of the Box.
+-- @function Box:GetY
+-- @treturn number y
+
+--- Set the width of the Box.
+-- @function Box:SetWidth
+-- @tparam positive_number width
+-- @treturn bool success
+-- @see checkProperty
+
+--- Get the width of the Box.
+-- @function Box:GetWidth
+-- @treturn positive_number width
+-- @see checkProperty
+
+--- Set the height of the Box.
+-- @function Box:SetHeight
+-- @tparam positive_number height
+-- @treturn bool success
+-- @see checkProperty
+
+--- Get the height of the Box.
+-- @function Box:GetHeight
+-- @treturn positive_number height
+-- @see checkProperty
+
+--- Set the color of the Box.
+-- @function Box:SetColor
+-- @tparam color color
+-- @treturn bool success
+-- @see checkProperty
+
+--- Get the color of the Box.
+-- @function Box:GetColor
+-- @treturn color color
+-- @see checkProperty
+
+--- Set the opacity of the Box.
+-- @function Box:SetOpacity
+-- @tparam percent opacity
+-- @treturn bool success
+-- @see checkProperty
+
+--- Get the opacity of the Box.
+-- @function Box:GetOpacity
+-- @treturn percent opacity
+-- @see checkProperty
+
+--- A fluid textured box Object
+-- @type Fluid
+-- @see Tile:AddFluid
+-- @see Object
+
+--- Set the X coordinate of the Fluid.
+-- @function Fluid:SetX
+-- @number x
+-- @treturn bool success
+
+--- Get the X coordinate of the Fluid.
+-- @function Fluid:GetX
+-- @treturn number x
+
+--- Set the Y coordinate of the Fluid.
+-- @function Fluid:SetY
+-- @number y
+-- @treturn bool success
+
+--- Get the Y coordinate of the Fluid.
+-- @function Fluid:GetY
+-- @treturn number y
+
+--- Set the width of the Fluid.
+-- @function Fluid:SetWidth
+-- @tparam positive_number width
+-- @treturn bool success
+-- @see checkProperty
+
+--- Get the width of the Fluid.
+-- @function Fluid:GetWidth
+-- @treturn positive_number width
+-- @see checkProperty
+
+--- Set the height of the Fluid.
+-- @function Fluid:SetHeight
+-- @tparam positive_number height
+-- @treturn bool success
+-- @see checkProperty
+
+--- Get the height of the Fluid.
+-- @function Fluid:GetHeight
+-- @treturn positive_number height
+-- @see checkProperty
+
+--- Set the fluid which is displayed.
+-- @function Fluid:SetFluid
+-- @string fluid
+-- @treturn bool success
+
+--- Get the fluid which is displayed.
+-- @function Fluid:GetFluid
+-- @treturn string fluid
+
+--- Set the alpha (opacity) of the Fluid.
+-- @function Fluid:SetAlpha
+-- @tparam percent alpha
+-- @treturn success
+-- @see checkProperty
+
+--- Get the alpha (opacity) of the Fluid.
+-- @function Fluid:GetAlpha
+-- @treturn percent alpha
+-- @see checkProperty
+
+--- A colored box Object with a gradient.
+-- @type GradientBox
+-- @see Tile:AddGradientBox
+-- @see Object
+
+--- Set the X coordinate of the GradientBox.
+-- @function GradientBox:SetX
+-- @number x
+-- @treturn bool success
+
+--- Get the X coordinate of the GradientBox.
+-- @function GradientBox:GetX
+-- @treturn number x
+
+--- Set the Y coordinate of the GradientBox.
+-- @function GradientBox:SetY
+-- @number y
+-- @treturn bool success
+
+--- Get the Y coordinate of the GradientBox.
+-- @function GradientBox:GetY
+-- @treturn number y
+
+--- Set the width of the GradientBox.
+-- @function GradientBox:SetWidth
+-- @tparam positive_number width
+-- @treturn bool success
+-- @see checkProperty
+
+--- Get the width of the GradientBox.
+-- @function GradientBox:GetWidth
+-- @treturn positive_number width
+-- @see checkProperty
+
+--- Set the height of the GradientBox.
+-- @function GradientBox:SetHeight
+-- @tparam positive_number height
+-- @treturn bool success
+-- @see checkProperty
+
+--- Get the height of the GradientBox.
+-- @function GradientBox:GetHeight
+-- @treturn positive_number height
+-- @see checkProperty
+
+--- Set the first color of the GradientBox.
+-- @todo be more explicit with these color things.
+-- @function GradientBox:SetColor1
+-- @tparam color color1
+-- @treturn bool success
+-- @see checkProperty
+
+--- Get the first color of the GradientBox.
+-- @function GradientBox:GetColor1
+-- @treturn color color1
+-- @see checkProperty
+
+--- Set the second color of the GradientBox.
+-- @todo be more explicit with these color things.
+-- @function GradientBox:SetColor2
+-- @tparam color color2
+-- @treturn bool success
+-- @see checkProperty
+
+--- Get the second color of the GradientBox.
+-- @function GradientBox:GetColor2
+-- @treturn color color2
+-- @see checkProperty
+
+--- Set the first opacity of the GradientBox.
+-- @function GradientBox:SetOpacity1
+-- @tparam percent opacity1
+-- @treturn bool success
+-- @see checkProperty
+
+--- Get the first opacity of the GradientBox.
+-- @function GradientBox:GetOpacity1
+-- @treturn percent opacity1
+-- @see checkProperty
+
+--- Set the second opacity of the GradientBox.
+-- @function GradientBox:SetOpacity2
+-- @tparam percent opacity2
+-- @treturn bool success
+-- @see checkProperty
+
+--- Get the second opacity of the GradientBox.
+-- @function GradientBox:GetOpacity2
+-- @treturn percent opacity2
+-- @see checkProperty
+
+--- Set the gradient of the GradientBox
+-- @todo what does this even mean?
+-- @function GradientBox:SetGradient
+-- @tparam gradient gradient
+-- @treturn bool success
+-- @see checkProperty
+
+--- Get the gradient of the GradientBox
+-- @todo what does this even mean?
+-- @function GradientBox:GetGradient
+-- @treturn gradient gradient
+-- @see checkProperty
+
+--- A line Object with a color gradient.
+-- @type GradientLine
+-- @see Tile:AddGradientLine
+-- @see Line
+
+--- Set the first point of the GradientLine. Copies the point, so modification of them after setting will not affect the Object.
+-- @function GradientLine:SetP1
+-- @tparam complexPoint p1
+-- @treturn bool success
+-- @see checkProperty
+
+--- Get the first point of the GradientLine. Copies the point, so modification of them after getting will not affect the Object.
+-- @function GradientLine:GetP1
+-- @treturn complexPoint p1
+-- @see checkProperty
+
+--- Set the second point of the GradientLine. Copies the point, so modification of them after setting will not affect the Object.
+-- @function GradientLine:SetP2
+-- @tparam complexPoint p2
+-- @treturn bool success
+-- @see checkProperty
+
+--- Get the second point of the GradientLine. Copies the point, so modification of them after getting will not affect the Object.
+-- @function GradientLine:GetP2
+-- @treturn complexPoint p2
+-- @see checkProperty
+
+--- A bunch of Gradient Lines (I think?)
+-- @type GradientLineList
+-- @fixme I've never actually used one of these.  Is just a bunch of lines?
+
+--- Set the terminal points of the GradientLineList.  Copies the points, so modification of them after setting will not affect the Object.
+-- @function GradientLineList:SetPoints
+-- @tparam {complexPoint,...} points
+-- @treturn bool success
+-- @see checkProperty
+
+--- Get the array of terminal points of the GradientLineList.  Copies the points, so modification of them after getting will not affect the Object.
+-- @function GradientLineList:GetPoints
+-- @treturn {complexPoint,...} points
+-- @see checkProperty
+
+--- Here we create the templates for each object and specify special functions.
 local objects = {
 	Box = {
 		properties = {

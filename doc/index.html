@@ -1,0 +1,2696 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN"
+   "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd">
+<html>
+<meta http-equiv="Content-Type" content="text/html; charset=UTF-8"/>
+<head>
+    <title>Tiles API</title>
+    <link rel="stylesheet" href="ldoc.css" type="text/css" />
+</head>
+<body>
+
+<div id="container">
+
+<div id="product">
+	<div id="product_logo"></div>
+	<div id="product_name"><big><b></b></big></div>
+	<div id="product_description"></div>
+</div> <!-- id="product" -->
+
+
+<div id="main">
+
+
+<!-- Menu -->
+
+<div id="navigation">
+<br/>
+<h1>ldoc</h1>
+
+
+<h2>Contents</h2>
+<ul>
+<li><a href="#Functions">Functions</a></li>
+<li><a href="#Tables">Tables</a></li>
+<li><a href="#Class_Object">Class Object </a></li>
+<li><a href="#Class_Box">Class Box </a></li>
+<li><a href="#Class_Fluid">Class Fluid </a></li>
+<li><a href="#Class_GradientBox">Class GradientBox </a></li>
+<li><a href="#Class_GradientLine">Class GradientLine </a></li>
+<li><a href="#Class_GradientLineList">Class GradientLineList </a></li>
+</ul>
+
+
+<h2>Modules</h2>
+<ul class="$(kind=='Topics' and '' or 'nowrap'">
+  <li><strong>tiles</strong></li>
+</ul>
+
+</div>
+
+<div id="content">
+
+<h1>Module <code>tiles</code></h1>
+<p>Compositing API for Terminal Glasses.</p>
+<p>
+ The Tiles API offers a new fundamental way of interacting with the Terminal Glasses drawing surface by allowing one to draw to subsurfaces called "Tiles".  This allows for the modular and composable creation of graphical elements from smaller constituent parts, and to treat such compositions as a single entity in a rational manner.</p>
+    <h3>Info:</h3>
+    <ul>
+        <li><strong>Copyright</strong>: <a href=https://github.com/blunty666>Blunty666</a></li>
+        <li><strong>License</strong>: <a href=https://opensource.org/licenses/MIT>MIT</a></li>
+        <li><strong>Author</strong>: <a href=https://github.com/blunty666>Blunty666</a> (code),<a href=https://github.com/Fizzixnerd>Fizzixnerd</a> (docs)</li>
+    </ul>
+
+
+<h2><a href="#Functions">Functions</a></h2>
+<table class="function_list">
+	<tr>
+	<td class="name" nowrap><a href="#getStringWidth">getStringWidth (str)</a></td>
+	<td class="summary">Return the on-screen width of a string.</td>
+	</tr>
+	<tr>
+	<td class="name" nowrap><a href="#getMaxStringLength">getMaxStringLength (str, width, startPos)</a></td>
+	<td class="summary">Return the longest length of a substring of `str' starting at
+ `startPos' which will fit within a line of length `width'.</td>
+	</tr>
+</table>
+<h2><a href="#Tables">Tables</a></h2>
+<table class="function_list">
+	<tr>
+	<td class="name" nowrap><a href="#checkProperty">checkProperty</a></td>
+	<td class="summary">Contains functions for type-checking arguments.</td>
+	</tr>
+</table>
+<h2><a href="#Class_Object">Class Object </a></h2>
+<table class="function_list">
+	<tr>
+	<td class="name" nowrap><a href="#Object:Delete">Object:Delete ()</a></td>
+	<td class="summary">Delete the Object and remove it from its parent Tile.</td>
+	</tr>
+	<tr>
+	<td class="name" nowrap><a href="#Object:GetID">Object:GetID ()</a></td>
+	<td class="summary">Return ID of Object.</td>
+	</tr>
+	<tr>
+	<td class="name" nowrap><a href="#Object:GetType">Object:GetType ()</a></td>
+	<td class="summary">Return type of Object.</td>
+	</tr>
+	<tr>
+	<td class="name" nowrap><a href="#Object:GetTile">Object:GetTile ()</a></td>
+	<td class="summary">Return parent Tile of Object.</td>
+	</tr>
+	<tr>
+	<td class="name" nowrap><a href="#Object:GetName">Object:GetName ()</a></td>
+	<td class="summary">Return name of Object or nil if not named.</td>
+	</tr>
+	<tr>
+	<td class="name" nowrap><a href="#Object:SetName">Object:SetName (name)</a></td>
+	<td class="summary">Sets name of Object and return true, or return false if name was not set.</td>
+	</tr>
+	<tr>
+	<td class="name" nowrap><a href="#Object:GetUserdata">Object:GetUserdata ()</a></td>
+	<td class="summary">Return the arbitrary userdata associated with the Object.</td>
+	</tr>
+	<tr>
+	<td class="name" nowrap><a href="#Object:SetUserdata">Object:SetUserdata (data)</a></td>
+	<td class="summary">Set the arbitrary userdata associated with the Object.</td>
+	</tr>
+	<tr>
+	<td class="name" nowrap><a href="#Object:SetObjectAnchor">Object:SetObjectAnchor (horizontal, vertical)</a></td>
+	<td class="summary">Set the anchoring of the Object.</td>
+	</tr>
+	<tr>
+	<td class="name" nowrap><a href="#Object:GetObjectAnchor">Object:GetObjectAnchor ()</a></td>
+	<td class="summary">Return the anchoring of the Object.</td>
+	</tr>
+	<tr>
+	<td class="name" nowrap><a href="#Object:SetClickable">Object:SetClickable (isClickable)</a></td>
+	<td class="summary">Set whether the Object can receive OnClick events.</td>
+	</tr>
+	<tr>
+	<td class="name" nowrap><a href="#Object:GetClickable">Object:GetClickable ()</a></td>
+	<td class="summary">Return whether the Object can receive OnClick events.</td>
+	</tr>
+	<tr>
+	<td class="name" nowrap><a href="#Object:SetRotation">Object:SetRotation (angle)</a></td>
+	<td class="summary">Set the rotation angle of the Object in degrees.</td>
+	</tr>
+	<tr>
+	<td class="name" nowrap><a href="#Object:GetRotation">Object:GetRotation ()</a></td>
+	<td class="summary">Return the rotation angle of the Object in degrees.</td>
+	</tr>
+	<tr>
+	<td class="name" nowrap><a href="#Object:SetVisible">Object:SetVisible (isVisible)</a></td>
+	<td class="summary">Set whether the Object is visible.</td>
+	</tr>
+	<tr>
+	<td class="name" nowrap><a href="#Object:GetVisible">Object:GetVisible ()</a></td>
+	<td class="summary">Return whether the Object is visible.</td>
+	</tr>
+	<tr>
+	<td class="name" nowrap><a href="#Object:SetZ">Object:SetZ (z)</a></td>
+	<td class="summary">Set the Z coordinate of the Object.</td>
+	</tr>
+	<tr>
+	<td class="name" nowrap><a href="#Object:GetZ">Object:GetZ ()</a></td>
+	<td class="summary">Return the Z coordinate of the Object.</td>
+	</tr>
+	<tr>
+	<td class="name" nowrap><a href="#Object:SetOnClick">Object:SetOnClick (callback)</a></td>
+	<td class="summary">Set the callback for when the Object is clicked.</td>
+	</tr>
+	<tr>
+	<td class="name" nowrap><a href="#Object:GetOnClick">Object:GetOnClick ()</a></td>
+	<td class="summary">Return the callback for when the Object is clicked.</td>
+	</tr>
+	<tr>
+	<td class="name" nowrap><a href="#Object:SetOnRelease">Object:SetOnRelease (callback)</a></td>
+	<td class="summary">Set the callback for when the Object is unclicked.</td>
+	</tr>
+	<tr>
+	<td class="name" nowrap><a href="#Object:GetOnRelease">Object:GetOnRelease ()</a></td>
+	<td class="summary">Return the callback for when the Object is unclicked.</td>
+	</tr>
+	<tr>
+	<td class="name" nowrap><a href="#Object:SetOnDrag">Object:SetOnDrag (callback)</a></td>
+	<td class="summary">Set the callback for when the Object is dragged.</td>
+	</tr>
+	<tr>
+	<td class="name" nowrap><a href="#Object:GetOnDrag">Object:GetOnDrag ()</a></td>
+	<td class="summary">Return the callback for when the Object is dragged.</td>
+	</tr>
+	<tr>
+	<td class="name" nowrap><a href="#Object:SetOnScroll">Object:SetOnScroll (callback)</a></td>
+	<td class="summary">Set the callback for when the Object is scrolled.</td>
+	</tr>
+	<tr>
+	<td class="name" nowrap><a href="#Object:GetOnScroll">Object:GetOnScroll ()</a></td>
+	<td class="summary">Return the callback for when the Object is scrolled.</td>
+	</tr>
+	<tr>
+	<td class="name" nowrap><a href="#Object:SetOnKeyDown">Object:SetOnKeyDown (callback)</a></td>
+	<td class="summary">Set the callback for when the Object has a key pressed on it.</td>
+	</tr>
+	<tr>
+	<td class="name" nowrap><a href="#Object:GetOnKeyDown">Object:GetOnKeyDown ()</a></td>
+	<td class="summary">Return the callback for when the Object has a key pressed on it.</td>
+	</tr>
+	<tr>
+	<td class="name" nowrap><a href="#Object:SetOnKeyUp">Object:SetOnKeyUp (callback)</a></td>
+	<td class="summary">Set the callback for when the Object has a key unpressed on it.</td>
+	</tr>
+	<tr>
+	<td class="name" nowrap><a href="#Object:GetOnKeyUp">Object:GetOnKeyUp ()</a></td>
+	<td class="summary">Return the callback for when the Object has a key unpressed on it.</td>
+	</tr>
+	<tr>
+	<td class="name" nowrap><a href="#Object:SetOnSelect">Object:SetOnSelect (callback)</a></td>
+	<td class="summary">Set the callback for when the Object is selected.</td>
+	</tr>
+	<tr>
+	<td class="name" nowrap><a href="#Object:GetOnSelect">Object:GetOnSelect ()</a></td>
+	<td class="summary">Return the callback for when the Object is selected.</td>
+	</tr>
+	<tr>
+	<td class="name" nowrap><a href="#Object:SetOnDeselect">Object:SetOnDeselect (callback)</a></td>
+	<td class="summary">Set the callback for when the Object is deselected.</td>
+	</tr>
+	<tr>
+	<td class="name" nowrap><a href="#Object:GetOnDeselect">Object:GetOnDeselect ()</a></td>
+	<td class="summary">Return the callback for when the Object is deselected.</td>
+	</tr>
+</table>
+<h2><a href="#Class_Box">Class Box </a></h2>
+<table class="function_list">
+	<tr>
+	<td class="name" nowrap><a href="#Box:SetX">Box:SetX (x)</a></td>
+	<td class="summary">Set the X coordinate of the Box.</td>
+	</tr>
+	<tr>
+	<td class="name" nowrap><a href="#Box:GetX">Box:GetX ()</a></td>
+	<td class="summary">Get the X coordinate of the Box.</td>
+	</tr>
+	<tr>
+	<td class="name" nowrap><a href="#Box:SetY">Box:SetY (y)</a></td>
+	<td class="summary">Set the Y coordinate of the Box.</td>
+	</tr>
+	<tr>
+	<td class="name" nowrap><a href="#Box:GetY">Box:GetY ()</a></td>
+	<td class="summary">Get the Y coordinate of the Box.</td>
+	</tr>
+	<tr>
+	<td class="name" nowrap><a href="#Box:SetWidth">Box:SetWidth (width)</a></td>
+	<td class="summary">Set the width of the Box.</td>
+	</tr>
+	<tr>
+	<td class="name" nowrap><a href="#Box:GetWidth">Box:GetWidth ()</a></td>
+	<td class="summary">Get the width of the Box.</td>
+	</tr>
+	<tr>
+	<td class="name" nowrap><a href="#Box:SetHeight">Box:SetHeight (height)</a></td>
+	<td class="summary">Set the height of the Box.</td>
+	</tr>
+	<tr>
+	<td class="name" nowrap><a href="#Box:GetHeight">Box:GetHeight ()</a></td>
+	<td class="summary">Get the height of the Box.</td>
+	</tr>
+	<tr>
+	<td class="name" nowrap><a href="#Box:SetColor">Box:SetColor (color)</a></td>
+	<td class="summary">Set the color of the Box.</td>
+	</tr>
+	<tr>
+	<td class="name" nowrap><a href="#Box:GetColor">Box:GetColor ()</a></td>
+	<td class="summary">Get the color of the Box.</td>
+	</tr>
+	<tr>
+	<td class="name" nowrap><a href="#Box:SetOpacity">Box:SetOpacity (opacity)</a></td>
+	<td class="summary">Set the opacity of the Box.</td>
+	</tr>
+	<tr>
+	<td class="name" nowrap><a href="#Box:GetOpacity">Box:GetOpacity ()</a></td>
+	<td class="summary">Get the opacity of the Box.</td>
+	</tr>
+</table>
+<h2><a href="#Class_Fluid">Class Fluid </a></h2>
+<table class="function_list">
+	<tr>
+	<td class="name" nowrap><a href="#Fluid:SetX">Fluid:SetX (x)</a></td>
+	<td class="summary">Set the X coordinate of the Fluid.</td>
+	</tr>
+	<tr>
+	<td class="name" nowrap><a href="#Fluid:GetX">Fluid:GetX ()</a></td>
+	<td class="summary">Get the X coordinate of the Fluid.</td>
+	</tr>
+	<tr>
+	<td class="name" nowrap><a href="#Fluid:SetY">Fluid:SetY (y)</a></td>
+	<td class="summary">Set the Y coordinate of the Fluid.</td>
+	</tr>
+	<tr>
+	<td class="name" nowrap><a href="#Fluid:GetY">Fluid:GetY ()</a></td>
+	<td class="summary">Get the Y coordinate of the Fluid.</td>
+	</tr>
+	<tr>
+	<td class="name" nowrap><a href="#Fluid:SetWidth">Fluid:SetWidth (width)</a></td>
+	<td class="summary">Set the width of the Fluid.</td>
+	</tr>
+	<tr>
+	<td class="name" nowrap><a href="#Fluid:GetWidth">Fluid:GetWidth ()</a></td>
+	<td class="summary">Get the width of the Fluid.</td>
+	</tr>
+	<tr>
+	<td class="name" nowrap><a href="#Fluid:SetHeight">Fluid:SetHeight (height)</a></td>
+	<td class="summary">Set the height of the Fluid.</td>
+	</tr>
+	<tr>
+	<td class="name" nowrap><a href="#Fluid:GetHeight">Fluid:GetHeight ()</a></td>
+	<td class="summary">Get the height of the Fluid.</td>
+	</tr>
+	<tr>
+	<td class="name" nowrap><a href="#Fluid:SetFluid">Fluid:SetFluid (fluid)</a></td>
+	<td class="summary">Set the fluid which is displayed.</td>
+	</tr>
+	<tr>
+	<td class="name" nowrap><a href="#Fluid:GetFluid">Fluid:GetFluid ()</a></td>
+	<td class="summary">Get the fluid which is displayed.</td>
+	</tr>
+	<tr>
+	<td class="name" nowrap><a href="#Fluid:SetAlpha">Fluid:SetAlpha (alpha)</a></td>
+	<td class="summary">Set the alpha (opacity) of the Fluid.</td>
+	</tr>
+	<tr>
+	<td class="name" nowrap><a href="#Fluid:GetAlpha">Fluid:GetAlpha ()</a></td>
+	<td class="summary">Get the alpha (opacity) of the Fluid.</td>
+	</tr>
+</table>
+<h2><a href="#Class_GradientBox">Class GradientBox </a></h2>
+<table class="function_list">
+	<tr>
+	<td class="name" nowrap><a href="#GradientBox:SetX">GradientBox:SetX (x)</a></td>
+	<td class="summary">Set the X coordinate of the GradientBox.</td>
+	</tr>
+	<tr>
+	<td class="name" nowrap><a href="#GradientBox:GetX">GradientBox:GetX ()</a></td>
+	<td class="summary">Get the X coordinate of the GradientBox.</td>
+	</tr>
+	<tr>
+	<td class="name" nowrap><a href="#GradientBox:SetY">GradientBox:SetY (y)</a></td>
+	<td class="summary">Set the Y coordinate of the GradientBox.</td>
+	</tr>
+	<tr>
+	<td class="name" nowrap><a href="#GradientBox:GetY">GradientBox:GetY ()</a></td>
+	<td class="summary">Get the Y coordinate of the GradientBox.</td>
+	</tr>
+	<tr>
+	<td class="name" nowrap><a href="#GradientBox:SetWidth">GradientBox:SetWidth (width)</a></td>
+	<td class="summary">Set the width of the GradientBox.</td>
+	</tr>
+	<tr>
+	<td class="name" nowrap><a href="#GradientBox:GetWidth">GradientBox:GetWidth ()</a></td>
+	<td class="summary">Get the width of the GradientBox.</td>
+	</tr>
+	<tr>
+	<td class="name" nowrap><a href="#GradientBox:SetHeight">GradientBox:SetHeight (height)</a></td>
+	<td class="summary">Set the height of the GradientBox.</td>
+	</tr>
+	<tr>
+	<td class="name" nowrap><a href="#GradientBox:GetHeight">GradientBox:GetHeight ()</a></td>
+	<td class="summary">Get the height of the GradientBox.</td>
+	</tr>
+	<tr>
+	<td class="name" nowrap><a href="#GradientBox:SetColor1">GradientBox:SetColor1 (color1)</a></td>
+	<td class="summary">Set the first color of the GradientBox.</td>
+	</tr>
+	<tr>
+	<td class="name" nowrap><a href="#GradientBox:GetColor1">GradientBox:GetColor1 ()</a></td>
+	<td class="summary">Get the first color of the GradientBox.</td>
+	</tr>
+	<tr>
+	<td class="name" nowrap><a href="#GradientBox:SetColor2">GradientBox:SetColor2 (color2)</a></td>
+	<td class="summary">Set the second color of the GradientBox.</td>
+	</tr>
+	<tr>
+	<td class="name" nowrap><a href="#GradientBox:GetColor2">GradientBox:GetColor2 ()</a></td>
+	<td class="summary">Get the second color of the GradientBox.</td>
+	</tr>
+	<tr>
+	<td class="name" nowrap><a href="#GradientBox:SetOpacity1">GradientBox:SetOpacity1 (opacity1)</a></td>
+	<td class="summary">Set the first opacity of the GradientBox.</td>
+	</tr>
+	<tr>
+	<td class="name" nowrap><a href="#GradientBox:GetOpacity1">GradientBox:GetOpacity1 ()</a></td>
+	<td class="summary">Get the first opacity of the GradientBox.</td>
+	</tr>
+	<tr>
+	<td class="name" nowrap><a href="#GradientBox:SetOpacity2">GradientBox:SetOpacity2 (opacity2)</a></td>
+	<td class="summary">Set the second opacity of the GradientBox.</td>
+	</tr>
+	<tr>
+	<td class="name" nowrap><a href="#GradientBox:GetOpacity2">GradientBox:GetOpacity2 ()</a></td>
+	<td class="summary">Get the second opacity of the GradientBox.</td>
+	</tr>
+	<tr>
+	<td class="name" nowrap><a href="#GradientBox:SetGradient">GradientBox:SetGradient (gradient)</a></td>
+	<td class="summary">Set the gradient of the GradientBox</td>
+	</tr>
+	<tr>
+	<td class="name" nowrap><a href="#GradientBox:GetGradient">GradientBox:GetGradient ()</a></td>
+	<td class="summary">Get the gradient of the GradientBox</td>
+	</tr>
+</table>
+<h2><a href="#Class_GradientLine">Class GradientLine </a></h2>
+<table class="function_list">
+	<tr>
+	<td class="name" nowrap><a href="#GradientLine:SetP1">GradientLine:SetP1 (p1)</a></td>
+	<td class="summary">Set the first point of the GradientLine.</td>
+	</tr>
+	<tr>
+	<td class="name" nowrap><a href="#GradientLine:GetP1">GradientLine:GetP1 ()</a></td>
+	<td class="summary">Get the first point of the GradientLine.</td>
+	</tr>
+	<tr>
+	<td class="name" nowrap><a href="#GradientLine:SetP2">GradientLine:SetP2 (p2)</a></td>
+	<td class="summary">Set the second point of the GradientLine.</td>
+	</tr>
+	<tr>
+	<td class="name" nowrap><a href="#GradientLine:GetP2">GradientLine:GetP2 ()</a></td>
+	<td class="summary">Get the second point of the GradientLine.</td>
+	</tr>
+</table>
+<h2><a href="#Class_GradientLineList">Class GradientLineList </a></h2>
+<table class="function_list">
+	<tr>
+	<td class="name" nowrap><a href="#GradientLineList:SetPoints">GradientLineList:SetPoints (points)</a></td>
+	<td class="summary">Set the terminal points of the GradientLineList.</td>
+	</tr>
+	<tr>
+	<td class="name" nowrap><a href="#GradientLineList:GetPoints">GradientLineList:GetPoints ()</a></td>
+	<td class="summary">Get the array of terminal points of the GradientLineList.</td>
+	</tr>
+</table>
+
+<br/>
+<br/>
+
+
+    <h2 class="section-header "><a name="Functions"></a>Functions</h2>
+
+    <dl class="function">
+    <dt>
+    <a name = "getStringWidth"></a>
+    <strong>getStringWidth (str)</strong>
+    </dt>
+    <dd>
+    Return the on-screen width of a string.
+
+
+    <h3>Parameters:</h3>
+    <ul>
+        <li><span class="parameter">str</span>
+            <span class="types"><a class="type" href="http://www.lua.org/manual/5.1/manual.html#5.4">string</a></span>
+
+        </li>
+    </ul>
+
+    <h3>Returns:</h3>
+    <ol>
+
+           <span class="types"><span class="type">int</span></span>
+        width
+    </ol>
+
+    <h3>Raises:</h3>
+    error when str is not a string.
+
+
+
+</dd>
+    <dt>
+    <a name = "getMaxStringLength"></a>
+    <strong>getMaxStringLength (str, width, startPos)</strong>
+    </dt>
+    <dd>
+    Return the longest length of a substring of `str' starting at
+ `startPos' which will fit within a line of length `width'.
+
+
+    <h3>Parameters:</h3>
+    <ul>
+        <li><span class="parameter">str</span>
+            <span class="types"><a class="type" href="http://www.lua.org/manual/5.1/manual.html#5.4">string</a></span>
+
+        </li>
+        <li><span class="parameter">width</span>
+            <span class="types"><span class="type">number</span></span>
+
+        </li>
+        <li><span class="parameter">startPos</span>
+            <span class="types"><span class="type">number</span></span>
+
+        </li>
+    </ul>
+
+    <h3>Returns:</h3>
+    <ol>
+
+           <span class="types"><span class="type">int</span></span>
+        width
+    </ol>
+
+    <h3>Raises:</h3>
+    error when str is not a string.
+
+
+
+</dd>
+</dl>
+    <h2 class="section-header "><a name="Tables"></a>Tables</h2>
+
+    <dl class="function">
+    <dt>
+    <a name = "checkProperty"></a>
+    <strong>checkProperty</strong>
+    </dt>
+    <dd>
+    Contains functions for type-checking arguments.
+ If a function expects an argument of type `typename', then
+ `checkProperty[typename](val)` returns true iff `val' is of type
+ `typename'.
+
+
+    <h3>Fields:</h3>
+    <ul>
+        <li><span class="parameter">name</span>
+         A Lua string or nil.
+        </li>
+        <li><span class="parameter">number</span>
+         A Lua number.
+        </li>
+        <li><span class="parameter">positive_number</span>
+         A _non-negative_ Lua number.
+        </li>
+        <li><span class="parameter">string</span>
+         A Lua string.
+        </li>
+        <li><span class="parameter">boolean</span>
+         A Lua boolean.
+        </li>
+        <li><span class="parameter">alignment</span>
+         A valid pair of alignment specifiers.
+        </li>
+        <li><span class="parameter">userdata</span>
+         Any value.
+        </li>
+        <li><span class="parameter">function</span>
+         A Lua function.
+        </li>
+        <li><span class="parameter">percent</span>
+         A Lua number between 0 and 1 (inclusive).
+        </li>
+        <li><span class="parameter">alpha</span>
+         An integer between 0 and 255 (inclusive).
+        </li>
+        <li><span class="parameter">colour</span>
+         An integer between 0x000000 and 0xFFFFFF (inclusive).
+        </li>
+        <li><span class="parameter">gradient</span>
+         An integer equal to either 1 or 2.
+        </li>
+        <li><span class="parameter">simplePoint</span>
+         A table which has fields `x' and `y' with values which are Lua numbers.
+        </li>
+        <li><span class="parameter">complexPoint</span>
+         A `simplePoint' which optionally contains the fields `rgb' or `opacity' with values which are a `colour' and a `percent' respectively.
+        </li>
+        <li><span class="parameter">simplePoints</span>
+         An array of `simplePoint' values.
+        </li>
+        <li><span class="parameter">complexPoints</span>
+         An array of `complexPoint' values.
+        </li>
+        <li><span class="parameter">meta</span>
+         An integer between 0 and 15 (inclusive).  Represents a Minecraft item meta value.
+        </li>
+        <li><span class="parameter">surface</span>
+         A `surface' object as exposed by the Terminal Glasses API.
+        </li>
+        <li><span class="parameter">capture</span>
+         A `capture' object as exposed by the Terminal Glasses API.
+        </li>
+        <li><span class="parameter">bridge</span>
+         A wrapped Terminal Glasses Bridge (for example, the object returned by the call peripheral.wrap(sideOfBridge)).
+        </li>
+        <li><span class="parameter">functionOrNil</span>
+         A Lua function or nil.
+        </li>
+    </ul>
+
+
+
+
+
+</dd>
+</dl>
+    <h2 class="section-header has-description"><a name="Class_Object"></a>Class Object </h2>
+
+          <div class="section-description">
+          All Objects share these methods.
+ Objects are the drawable things in the API.  Note that Objects in
+ the same Tile _cannot_ share a name.
+          </div>
+    <dl class="function">
+    <dt>
+    <a name = "Object:Delete"></a>
+    <strong>Object:Delete ()</strong>
+    </dt>
+    <dd>
+    Delete the Object and remove it from its parent Tile.
+
+
+
+    <h3>Returns:</h3>
+    <ol>
+
+           <span class="types"><span class="type">bool</span></span>
+        success
+    </ol>
+
+
+
+
+</dd>
+    <dt>
+    <a name = "Object:GetID"></a>
+    <strong>Object:GetID ()</strong>
+    </dt>
+    <dd>
+    Return ID of Object.
+
+
+
+    <h3>Returns:</h3>
+    <ol>
+
+           <span class="types"><span class="type">int</span></span>
+        id
+    </ol>
+
+
+
+
+</dd>
+    <dt>
+    <a name = "Object:GetType"></a>
+    <strong>Object:GetType ()</strong>
+    </dt>
+    <dd>
+    Return type of Object.
+
+
+
+    <h3>Returns:</h3>
+    <ol>
+
+           <span class="types"><a class="type" href="http://www.lua.org/manual/5.1/manual.html#5.4">string</a></span>
+        type
+    </ol>
+
+
+
+
+</dd>
+    <dt>
+    <a name = "Object:GetTile"></a>
+    <strong>Object:GetTile ()</strong>
+    </dt>
+    <dd>
+    Return parent Tile of Object.
+
+
+
+    <h3>Returns:</h3>
+    <ol>
+
+           <span class="types"><span class="type">tiles.Tile</span></span>
+        parent
+    </ol>
+
+
+
+
+</dd>
+    <dt>
+    <a name = "Object:GetName"></a>
+    <strong>Object:GetName ()</strong>
+    </dt>
+    <dd>
+    Return name of Object or nil if not named.
+
+
+
+    <h3>Returns:</h3>
+    <ol>
+
+           <span class="types">optional <a class="type" href="http://www.lua.org/manual/5.1/manual.html#5.4">string</a></span>
+        name
+    </ol>
+
+
+
+
+</dd>
+    <dt>
+    <a name = "Object:SetName"></a>
+    <strong>Object:SetName (name)</strong>
+    </dt>
+    <dd>
+    Sets name of Object and return true, or return false if name was not set.   Passing nil will unname the Object.
+
+
+    <h3>Parameters:</h3>
+    <ul>
+        <li><span class="parameter">name</span>
+            <span class="types">optional <a class="type" href="http://www.lua.org/manual/5.1/manual.html#5.4">string</a></span>
+
+        </li>
+    </ul>
+
+    <h3>Returns:</h3>
+    <ol>
+
+           <span class="types"><span class="type">bool</span></span>
+        success
+    </ol>
+
+
+
+
+</dd>
+    <dt>
+    <a name = "Object:GetUserdata"></a>
+    <strong>Object:GetUserdata ()</strong>
+    </dt>
+    <dd>
+    Return the arbitrary userdata associated with the Object.
+
+
+
+    <h3>Returns:</h3>
+    <ol>
+
+           <span class="types">optional <span class="type">any</span></span>
+        data
+    </ol>
+
+
+
+
+</dd>
+    <dt>
+    <a name = "Object:SetUserdata"></a>
+    <strong>Object:SetUserdata (data)</strong>
+    </dt>
+    <dd>
+    Set the arbitrary userdata associated with the Object.
+
+
+    <h3>Parameters:</h3>
+    <ul>
+        <li><span class="parameter">data</span>
+            <span class="types">optional <span class="type">any</span></span>
+
+        </li>
+    </ul>
+
+    <h3>Returns:</h3>
+    <ol>
+
+           <span class="types"><span class="type">bool</span></span>
+        success
+    </ol>
+
+
+
+
+</dd>
+    <dt>
+    <a name = "Object:SetObjectAnchor"></a>
+    <strong>Object:SetObjectAnchor (horizontal, vertical)</strong>
+    </dt>
+    <dd>
+    Set the anchoring of the Object.
+
+
+    <h3>Parameters:</h3>
+    <ul>
+        <li><span class="parameter">horizontal</span>
+            <span class="types"><a class="type" href="http://www.lua.org/manual/5.1/manual.html#5.4">string</a></span>
+         One of "left", "middle", or "right".
+        </li>
+        <li><span class="parameter">vertical</span>
+            <span class="types"><a class="type" href="http://www.lua.org/manual/5.1/manual.html#5.4">string</a></span>
+         One of "top", "middle", or "bottom".
+        </li>
+    </ul>
+
+
+
+
+
+</dd>
+    <dt>
+    <a name = "Object:GetObjectAnchor"></a>
+    <strong>Object:GetObjectAnchor ()</strong>
+    </dt>
+    <dd>
+    Return the anchoring of the Object.
+
+
+
+    <h3>Returns:</h3>
+    <ol>
+        <li>
+           <span class="types"><a class="type" href="http://www.lua.org/manual/5.1/manual.html#5.4">string</a></span>
+        horizontal</li>
+        <li>
+           <span class="types"><a class="type" href="http://www.lua.org/manual/5.1/manual.html#5.4">string</a></span>
+        vertical</li>
+    </ol>
+
+
+
+
+</dd>
+    <dt>
+    <a name = "Object:SetClickable"></a>
+    <strong>Object:SetClickable (isClickable)</strong>
+    </dt>
+    <dd>
+    Set whether the Object can receive OnClick events.
+
+
+    <h3>Parameters:</h3>
+    <ul>
+        <li><span class="parameter">isClickable</span>
+            <span class="types"><span class="type">bool</span></span>
+
+        </li>
+    </ul>
+
+    <h3>Returns:</h3>
+    <ol>
+
+           <span class="types"><span class="type">bool</span></span>
+        success
+    </ol>
+
+
+
+
+</dd>
+    <dt>
+    <a name = "Object:GetClickable"></a>
+    <strong>Object:GetClickable ()</strong>
+    </dt>
+    <dd>
+    Return whether the Object can receive OnClick events.
+
+
+
+    <h3>Returns:</h3>
+    <ol>
+
+           <span class="types"><span class="type">bool</span></span>
+        isClickable
+    </ol>
+
+
+
+
+</dd>
+    <dt>
+    <a name = "Object:SetRotation"></a>
+    <strong>Object:SetRotation (angle)</strong>
+    </dt>
+    <dd>
+    Set the rotation angle of the Object in degrees.
+
+
+    <h3>Parameters:</h3>
+    <ul>
+        <li><span class="parameter">angle</span>
+            <span class="types"><span class="type">number</span></span>
+
+        </li>
+    </ul>
+
+    <h3>Returns:</h3>
+    <ol>
+
+           <span class="types"><span class="type">bool</span></span>
+        success
+    </ol>
+
+
+
+
+</dd>
+    <dt>
+    <a name = "Object:GetRotation"></a>
+    <strong>Object:GetRotation ()</strong>
+    </dt>
+    <dd>
+    Return the rotation angle of the Object in degrees.
+
+
+
+    <h3>Returns:</h3>
+    <ol>
+
+           <span class="types"><span class="type">number</span></span>
+        angle
+    </ol>
+
+
+
+
+</dd>
+    <dt>
+    <a name = "Object:SetVisible"></a>
+    <strong>Object:SetVisible (isVisible)</strong>
+    </dt>
+    <dd>
+    Set whether the Object is visible.
+
+
+    <h3>Parameters:</h3>
+    <ul>
+        <li><span class="parameter">isVisible</span>
+            <span class="types"><span class="type">bool</span></span>
+
+        </li>
+    </ul>
+
+    <h3>Returns:</h3>
+    <ol>
+
+           <span class="types"><span class="type">bool</span></span>
+        success
+    </ol>
+
+
+
+
+</dd>
+    <dt>
+    <a name = "Object:GetVisible"></a>
+    <strong>Object:GetVisible ()</strong>
+    </dt>
+    <dd>
+    Return whether the Object is visible.
+
+
+
+    <h3>Returns:</h3>
+    <ol>
+
+           <span class="types"><span class="type">bool</span></span>
+        isVisible
+    </ol>
+
+
+
+
+</dd>
+    <dt>
+    <a name = "Object:SetZ"></a>
+    <strong>Object:SetZ (z)</strong>
+    </dt>
+    <dd>
+    Set the Z coordinate of the Object.
+
+
+    <h3>Parameters:</h3>
+    <ul>
+        <li><span class="parameter">z</span>
+            <span class="types"><span class="type">number</span></span>
+
+        </li>
+    </ul>
+
+    <h3>Returns:</h3>
+    <ol>
+
+           <span class="types"><span class="type">bool</span></span>
+        success
+    </ol>
+
+
+
+
+</dd>
+    <dt>
+    <a name = "Object:GetZ"></a>
+    <strong>Object:GetZ ()</strong>
+    </dt>
+    <dd>
+    Return the Z coordinate of the Object.
+
+
+
+    <h3>Returns:</h3>
+    <ol>
+
+           <span class="types"><span class="type">number</span></span>
+        z
+    </ol>
+
+
+
+
+</dd>
+    <dt>
+    <a name = "Object:SetOnClick"></a>
+    <strong>Object:SetOnClick (callback)</strong>
+    </dt>
+    <dd>
+    Set the callback for when the Object is clicked.   Pass nil to remove the callback.
+
+
+    <h3>Parameters:</h3>
+    <ul>
+        <li><span class="parameter">callback</span>
+            <span class="types">optional <span class="type">func</span></span>
+
+        </li>
+    </ul>
+
+    <h3>Returns:</h3>
+    <ol>
+
+           <span class="types"><span class="type">bool</span></span>
+        success
+    </ol>
+
+
+
+
+</dd>
+    <dt>
+    <a name = "Object:GetOnClick"></a>
+    <strong>Object:GetOnClick ()</strong>
+    </dt>
+    <dd>
+    Return the callback for when the Object is clicked.   Return nil if no such callback is set.
+
+
+
+    <h3>Returns:</h3>
+    <ol>
+
+           <span class="types">optional <span class="type">func</span></span>
+        callback
+    </ol>
+
+
+
+
+</dd>
+    <dt>
+    <a name = "Object:SetOnRelease"></a>
+    <strong>Object:SetOnRelease (callback)</strong>
+    </dt>
+    <dd>
+    Set the callback for when the Object is unclicked.   Pass nil to remove the callback.
+
+
+    <h3>Parameters:</h3>
+    <ul>
+        <li><span class="parameter">callback</span>
+            <span class="types">optional <span class="type">func</span></span>
+
+        </li>
+    </ul>
+
+    <h3>Returns:</h3>
+    <ol>
+
+           <span class="types"><span class="type">bool</span></span>
+        success
+    </ol>
+
+
+
+
+</dd>
+    <dt>
+    <a name = "Object:GetOnRelease"></a>
+    <strong>Object:GetOnRelease ()</strong>
+    </dt>
+    <dd>
+    Return the callback for when the Object is unclicked.   Return nil if no such callback is set.
+
+
+
+    <h3>Returns:</h3>
+    <ol>
+
+           <span class="types">optional <span class="type">func</span></span>
+        callback
+    </ol>
+
+
+
+
+</dd>
+    <dt>
+    <a name = "Object:SetOnDrag"></a>
+    <strong>Object:SetOnDrag (callback)</strong>
+    </dt>
+    <dd>
+    Set the callback for when the Object is dragged.   Pass nil to remove the callback.
+
+
+    <h3>Parameters:</h3>
+    <ul>
+        <li><span class="parameter">callback</span>
+            <span class="types">optional <span class="type">func</span></span>
+
+        </li>
+    </ul>
+
+    <h3>Returns:</h3>
+    <ol>
+
+           <span class="types"><span class="type">bool</span></span>
+        success
+    </ol>
+
+
+
+
+</dd>
+    <dt>
+    <a name = "Object:GetOnDrag"></a>
+    <strong>Object:GetOnDrag ()</strong>
+    </dt>
+    <dd>
+    Return the callback for when the Object is dragged.   Return nil if no such callback is set.
+
+
+
+    <h3>Returns:</h3>
+    <ol>
+
+           <span class="types">optional <span class="type">func</span></span>
+        callback
+    </ol>
+
+
+
+
+</dd>
+    <dt>
+    <a name = "Object:SetOnScroll"></a>
+    <strong>Object:SetOnScroll (callback)</strong>
+    </dt>
+    <dd>
+    Set the callback for when the Object is scrolled.   Pass nil to remove the callback.
+
+
+    <h3>Parameters:</h3>
+    <ul>
+        <li><span class="parameter">callback</span>
+            <span class="types">optional <span class="type">func</span></span>
+
+        </li>
+    </ul>
+
+    <h3>Returns:</h3>
+    <ol>
+
+           <span class="types"><span class="type">bool</span></span>
+        success
+    </ol>
+
+
+
+
+</dd>
+    <dt>
+    <a name = "Object:GetOnScroll"></a>
+    <strong>Object:GetOnScroll ()</strong>
+    </dt>
+    <dd>
+    Return the callback for when the Object is scrolled.   Return nil if no such callback is set.
+
+
+
+    <h3>Returns:</h3>
+    <ol>
+
+           <span class="types">optional <span class="type">func</span></span>
+        callback
+    </ol>
+
+
+
+
+</dd>
+    <dt>
+    <a name = "Object:SetOnKeyDown"></a>
+    <strong>Object:SetOnKeyDown (callback)</strong>
+    </dt>
+    <dd>
+    Set the callback for when the Object has a key pressed on it.   Pass nil to remove the callback.
+
+
+    <h3>Parameters:</h3>
+    <ul>
+        <li><span class="parameter">callback</span>
+            <span class="types">optional <span class="type">func</span></span>
+
+        </li>
+    </ul>
+
+    <h3>Returns:</h3>
+    <ol>
+
+           <span class="types"><span class="type">bool</span></span>
+        success
+    </ol>
+
+
+
+
+</dd>
+    <dt>
+    <a name = "Object:GetOnKeyDown"></a>
+    <strong>Object:GetOnKeyDown ()</strong>
+    </dt>
+    <dd>
+    Return the callback for when the Object has a key pressed on it.   Return nil if no such callback is set.
+
+
+
+    <h3>Returns:</h3>
+    <ol>
+
+           <span class="types">optional <span class="type">func</span></span>
+        callback
+    </ol>
+
+
+
+
+</dd>
+    <dt>
+    <a name = "Object:SetOnKeyUp"></a>
+    <strong>Object:SetOnKeyUp (callback)</strong>
+    </dt>
+    <dd>
+    Set the callback for when the Object has a key unpressed on it.   Pass nil to remove the callback.
+
+
+    <h3>Parameters:</h3>
+    <ul>
+        <li><span class="parameter">callback</span>
+            <span class="types">optional <span class="type">func</span></span>
+
+        </li>
+    </ul>
+
+    <h3>Returns:</h3>
+    <ol>
+
+           <span class="types"><span class="type">bool</span></span>
+        success
+    </ol>
+
+
+
+
+</dd>
+    <dt>
+    <a name = "Object:GetOnKeyUp"></a>
+    <strong>Object:GetOnKeyUp ()</strong>
+    </dt>
+    <dd>
+    Return the callback for when the Object has a key unpressed on it.   Return nil if no such callback is set.
+
+
+
+    <h3>Returns:</h3>
+    <ol>
+
+           <span class="types">optional <span class="type">func</span></span>
+        callback
+    </ol>
+
+
+
+
+</dd>
+    <dt>
+    <a name = "Object:SetOnSelect"></a>
+    <strong>Object:SetOnSelect (callback)</strong>
+    </dt>
+    <dd>
+    Set the callback for when the Object is selected.   Pass nil to remove the callback.
+
+
+    <h3>Parameters:</h3>
+    <ul>
+        <li><span class="parameter">callback</span>
+            <span class="types">optional <span class="type">func</span></span>
+
+        </li>
+    </ul>
+
+    <h3>Returns:</h3>
+    <ol>
+
+           <span class="types"><span class="type">bool</span></span>
+        success
+    </ol>
+
+
+
+
+</dd>
+    <dt>
+    <a name = "Object:GetOnSelect"></a>
+    <strong>Object:GetOnSelect ()</strong>
+    </dt>
+    <dd>
+    Return the callback for when the Object is selected.   Return nil if no such callback is set.
+
+
+
+    <h3>Returns:</h3>
+    <ol>
+
+           <span class="types">optional <span class="type">func</span></span>
+        callback
+    </ol>
+
+
+
+
+</dd>
+    <dt>
+    <a name = "Object:SetOnDeselect"></a>
+    <strong>Object:SetOnDeselect (callback)</strong>
+    </dt>
+    <dd>
+    Set the callback for when the Object is deselected.   Pass nil to remove the callback.
+
+
+    <h3>Parameters:</h3>
+    <ul>
+        <li><span class="parameter">callback</span>
+            <span class="types">optional <span class="type">func</span></span>
+
+        </li>
+    </ul>
+
+    <h3>Returns:</h3>
+    <ol>
+
+           <span class="types"><span class="type">bool</span></span>
+        success
+    </ol>
+
+
+
+
+</dd>
+    <dt>
+    <a name = "Object:GetOnDeselect"></a>
+    <strong>Object:GetOnDeselect ()</strong>
+    </dt>
+    <dd>
+    Return the callback for when the Object is deselected.   Return nil if no such callback is set.
+
+
+
+    <h3>Returns:</h3>
+    <ol>
+
+           <span class="types">optional <span class="type">func</span></span>
+        callback
+    </ol>
+
+
+
+
+</dd>
+</dl>
+    <h2 class="section-header has-description"><a name="Class_Box"></a>Class Box </h2>
+
+          <div class="section-description">
+          A colored box Object.
+          </div>
+    <dl class="function">
+    <dt>
+    <a name = "Box:SetX"></a>
+    <strong>Box:SetX (x)</strong>
+    </dt>
+    <dd>
+    Set the X coordinate of the Box.
+
+
+    <h3>Parameters:</h3>
+    <ul>
+        <li><span class="parameter">x</span>
+            <span class="types"><span class="type">number</span></span>
+
+        </li>
+    </ul>
+
+    <h3>Returns:</h3>
+    <ol>
+
+           <span class="types"><span class="type">bool</span></span>
+        success
+    </ol>
+
+
+
+
+</dd>
+    <dt>
+    <a name = "Box:GetX"></a>
+    <strong>Box:GetX ()</strong>
+    </dt>
+    <dd>
+    Get the X coordinate of the Box.
+
+
+
+    <h3>Returns:</h3>
+    <ol>
+
+           <span class="types"><span class="type">number</span></span>
+        x
+    </ol>
+
+
+
+
+</dd>
+    <dt>
+    <a name = "Box:SetY"></a>
+    <strong>Box:SetY (y)</strong>
+    </dt>
+    <dd>
+    Set the Y coordinate of the Box.
+
+
+    <h3>Parameters:</h3>
+    <ul>
+        <li><span class="parameter">y</span>
+            <span class="types"><span class="type">number</span></span>
+
+        </li>
+    </ul>
+
+    <h3>Returns:</h3>
+    <ol>
+
+           <span class="types"><span class="type">bool</span></span>
+        success
+    </ol>
+
+
+
+
+</dd>
+    <dt>
+    <a name = "Box:GetY"></a>
+    <strong>Box:GetY ()</strong>
+    </dt>
+    <dd>
+    Get the Y coordinate of the Box.
+
+
+
+    <h3>Returns:</h3>
+    <ol>
+
+           <span class="types"><span class="type">number</span></span>
+        y
+    </ol>
+
+
+
+
+</dd>
+    <dt>
+    <a name = "Box:SetWidth"></a>
+    <strong>Box:SetWidth (width)</strong>
+    </dt>
+    <dd>
+    Set the width of the Box.
+
+
+    <h3>Parameters:</h3>
+    <ul>
+        <li><span class="parameter">width</span>
+            <span class="types"><span class="type">positive_number</span></span>
+
+        </li>
+    </ul>
+
+    <h3>Returns:</h3>
+    <ol>
+
+           <span class="types"><span class="type">bool</span></span>
+        success
+    </ol>
+
+
+    <h3>See also:</h3>
+    <ul>
+         <a href="index.html#checkProperty">checkProperty</a>
+    </ul>
+
+
+</dd>
+    <dt>
+    <a name = "Box:GetWidth"></a>
+    <strong>Box:GetWidth ()</strong>
+    </dt>
+    <dd>
+    Get the width of the Box.
+
+
+
+    <h3>Returns:</h3>
+    <ol>
+
+           <span class="types"><span class="type">positive_number</span></span>
+        width
+    </ol>
+
+
+    <h3>See also:</h3>
+    <ul>
+         <a href="index.html#checkProperty">checkProperty</a>
+    </ul>
+
+
+</dd>
+    <dt>
+    <a name = "Box:SetHeight"></a>
+    <strong>Box:SetHeight (height)</strong>
+    </dt>
+    <dd>
+    Set the height of the Box.
+
+
+    <h3>Parameters:</h3>
+    <ul>
+        <li><span class="parameter">height</span>
+            <span class="types"><span class="type">positive_number</span></span>
+
+        </li>
+    </ul>
+
+    <h3>Returns:</h3>
+    <ol>
+
+           <span class="types"><span class="type">bool</span></span>
+        success
+    </ol>
+
+
+    <h3>See also:</h3>
+    <ul>
+         <a href="index.html#checkProperty">checkProperty</a>
+    </ul>
+
+
+</dd>
+    <dt>
+    <a name = "Box:GetHeight"></a>
+    <strong>Box:GetHeight ()</strong>
+    </dt>
+    <dd>
+    Get the height of the Box.
+
+
+
+    <h3>Returns:</h3>
+    <ol>
+
+           <span class="types"><span class="type">positive_number</span></span>
+        height
+    </ol>
+
+
+    <h3>See also:</h3>
+    <ul>
+         <a href="index.html#checkProperty">checkProperty</a>
+    </ul>
+
+
+</dd>
+    <dt>
+    <a name = "Box:SetColor"></a>
+    <strong>Box:SetColor (color)</strong>
+    </dt>
+    <dd>
+    Set the color of the Box.
+
+
+    <h3>Parameters:</h3>
+    <ul>
+        <li><span class="parameter">color</span>
+            <span class="types"><span class="type">color</span></span>
+
+        </li>
+    </ul>
+
+    <h3>Returns:</h3>
+    <ol>
+
+           <span class="types"><span class="type">bool</span></span>
+        success
+    </ol>
+
+
+    <h3>See also:</h3>
+    <ul>
+         <a href="index.html#checkProperty">checkProperty</a>
+    </ul>
+
+
+</dd>
+    <dt>
+    <a name = "Box:GetColor"></a>
+    <strong>Box:GetColor ()</strong>
+    </dt>
+    <dd>
+    Get the color of the Box.
+
+
+
+    <h3>Returns:</h3>
+    <ol>
+
+           <span class="types"><span class="type">color</span></span>
+        color
+    </ol>
+
+
+    <h3>See also:</h3>
+    <ul>
+         <a href="index.html#checkProperty">checkProperty</a>
+    </ul>
+
+
+</dd>
+    <dt>
+    <a name = "Box:SetOpacity"></a>
+    <strong>Box:SetOpacity (opacity)</strong>
+    </dt>
+    <dd>
+    Set the opacity of the Box.
+
+
+    <h3>Parameters:</h3>
+    <ul>
+        <li><span class="parameter">opacity</span>
+            <span class="types"><span class="type">percent</span></span>
+
+        </li>
+    </ul>
+
+    <h3>Returns:</h3>
+    <ol>
+
+           <span class="types"><span class="type">bool</span></span>
+        success
+    </ol>
+
+
+    <h3>See also:</h3>
+    <ul>
+         <a href="index.html#checkProperty">checkProperty</a>
+    </ul>
+
+
+</dd>
+    <dt>
+    <a name = "Box:GetOpacity"></a>
+    <strong>Box:GetOpacity ()</strong>
+    </dt>
+    <dd>
+    Get the opacity of the Box.
+
+
+
+    <h3>Returns:</h3>
+    <ol>
+
+           <span class="types"><span class="type">percent</span></span>
+        opacity
+    </ol>
+
+
+    <h3>See also:</h3>
+    <ul>
+         <a href="index.html#checkProperty">checkProperty</a>
+    </ul>
+
+
+</dd>
+</dl>
+    <h2 class="section-header has-description"><a name="Class_Fluid"></a>Class Fluid </h2>
+
+          <div class="section-description">
+          A fluid textured box Object
+          </div>
+    <dl class="function">
+    <dt>
+    <a name = "Fluid:SetX"></a>
+    <strong>Fluid:SetX (x)</strong>
+    </dt>
+    <dd>
+    Set the X coordinate of the Fluid.
+
+
+    <h3>Parameters:</h3>
+    <ul>
+        <li><span class="parameter">x</span>
+            <span class="types"><span class="type">number</span></span>
+
+        </li>
+    </ul>
+
+    <h3>Returns:</h3>
+    <ol>
+
+           <span class="types"><span class="type">bool</span></span>
+        success
+    </ol>
+
+
+
+
+</dd>
+    <dt>
+    <a name = "Fluid:GetX"></a>
+    <strong>Fluid:GetX ()</strong>
+    </dt>
+    <dd>
+    Get the X coordinate of the Fluid.
+
+
+
+    <h3>Returns:</h3>
+    <ol>
+
+           <span class="types"><span class="type">number</span></span>
+        x
+    </ol>
+
+
+
+
+</dd>
+    <dt>
+    <a name = "Fluid:SetY"></a>
+    <strong>Fluid:SetY (y)</strong>
+    </dt>
+    <dd>
+    Set the Y coordinate of the Fluid.
+
+
+    <h3>Parameters:</h3>
+    <ul>
+        <li><span class="parameter">y</span>
+            <span class="types"><span class="type">number</span></span>
+
+        </li>
+    </ul>
+
+    <h3>Returns:</h3>
+    <ol>
+
+           <span class="types"><span class="type">bool</span></span>
+        success
+    </ol>
+
+
+
+
+</dd>
+    <dt>
+    <a name = "Fluid:GetY"></a>
+    <strong>Fluid:GetY ()</strong>
+    </dt>
+    <dd>
+    Get the Y coordinate of the Fluid.
+
+
+
+    <h3>Returns:</h3>
+    <ol>
+
+           <span class="types"><span class="type">number</span></span>
+        y
+    </ol>
+
+
+
+
+</dd>
+    <dt>
+    <a name = "Fluid:SetWidth"></a>
+    <strong>Fluid:SetWidth (width)</strong>
+    </dt>
+    <dd>
+    Set the width of the Fluid.
+
+
+    <h3>Parameters:</h3>
+    <ul>
+        <li><span class="parameter">width</span>
+            <span class="types"><span class="type">positive_number</span></span>
+
+        </li>
+    </ul>
+
+    <h3>Returns:</h3>
+    <ol>
+
+           <span class="types"><span class="type">bool</span></span>
+        success
+    </ol>
+
+
+    <h3>See also:</h3>
+    <ul>
+         <a href="index.html#checkProperty">checkProperty</a>
+    </ul>
+
+
+</dd>
+    <dt>
+    <a name = "Fluid:GetWidth"></a>
+    <strong>Fluid:GetWidth ()</strong>
+    </dt>
+    <dd>
+    Get the width of the Fluid.
+
+
+
+    <h3>Returns:</h3>
+    <ol>
+
+           <span class="types"><span class="type">positive_number</span></span>
+        width
+    </ol>
+
+
+    <h3>See also:</h3>
+    <ul>
+         <a href="index.html#checkProperty">checkProperty</a>
+    </ul>
+
+
+</dd>
+    <dt>
+    <a name = "Fluid:SetHeight"></a>
+    <strong>Fluid:SetHeight (height)</strong>
+    </dt>
+    <dd>
+    Set the height of the Fluid.
+
+
+    <h3>Parameters:</h3>
+    <ul>
+        <li><span class="parameter">height</span>
+            <span class="types"><span class="type">positive_number</span></span>
+
+        </li>
+    </ul>
+
+    <h3>Returns:</h3>
+    <ol>
+
+           <span class="types"><span class="type">bool</span></span>
+        success
+    </ol>
+
+
+    <h3>See also:</h3>
+    <ul>
+         <a href="index.html#checkProperty">checkProperty</a>
+    </ul>
+
+
+</dd>
+    <dt>
+    <a name = "Fluid:GetHeight"></a>
+    <strong>Fluid:GetHeight ()</strong>
+    </dt>
+    <dd>
+    Get the height of the Fluid.
+
+
+
+    <h3>Returns:</h3>
+    <ol>
+
+           <span class="types"><span class="type">positive_number</span></span>
+        height
+    </ol>
+
+
+    <h3>See also:</h3>
+    <ul>
+         <a href="index.html#checkProperty">checkProperty</a>
+    </ul>
+
+
+</dd>
+    <dt>
+    <a name = "Fluid:SetFluid"></a>
+    <strong>Fluid:SetFluid (fluid)</strong>
+    </dt>
+    <dd>
+    Set the fluid which is displayed.
+
+
+    <h3>Parameters:</h3>
+    <ul>
+        <li><span class="parameter">fluid</span>
+            <span class="types"><a class="type" href="http://www.lua.org/manual/5.1/manual.html#5.4">string</a></span>
+
+        </li>
+    </ul>
+
+    <h3>Returns:</h3>
+    <ol>
+
+           <span class="types"><span class="type">bool</span></span>
+        success
+    </ol>
+
+
+
+
+</dd>
+    <dt>
+    <a name = "Fluid:GetFluid"></a>
+    <strong>Fluid:GetFluid ()</strong>
+    </dt>
+    <dd>
+    Get the fluid which is displayed.
+
+
+
+    <h3>Returns:</h3>
+    <ol>
+
+           <span class="types"><a class="type" href="http://www.lua.org/manual/5.1/manual.html#5.4">string</a></span>
+        fluid
+    </ol>
+
+
+
+
+</dd>
+    <dt>
+    <a name = "Fluid:SetAlpha"></a>
+    <strong>Fluid:SetAlpha (alpha)</strong>
+    </dt>
+    <dd>
+    Set the alpha (opacity) of the Fluid.
+
+
+    <h3>Parameters:</h3>
+    <ul>
+        <li><span class="parameter">alpha</span>
+            <span class="types"><span class="type">percent</span></span>
+
+        </li>
+    </ul>
+
+    <h3>Returns:</h3>
+    <ol>
+
+           <span class="types"><span class="type">success</span></span>
+
+    </ol>
+
+
+    <h3>See also:</h3>
+    <ul>
+         <a href="index.html#checkProperty">checkProperty</a>
+    </ul>
+
+
+</dd>
+    <dt>
+    <a name = "Fluid:GetAlpha"></a>
+    <strong>Fluid:GetAlpha ()</strong>
+    </dt>
+    <dd>
+    Get the alpha (opacity) of the Fluid.
+
+
+
+    <h3>Returns:</h3>
+    <ol>
+
+           <span class="types"><span class="type">percent</span></span>
+        alpha
+    </ol>
+
+
+    <h3>See also:</h3>
+    <ul>
+         <a href="index.html#checkProperty">checkProperty</a>
+    </ul>
+
+
+</dd>
+</dl>
+    <h2 class="section-header has-description"><a name="Class_GradientBox"></a>Class GradientBox </h2>
+
+          <div class="section-description">
+          A colored box Object with a gradient.
+          </div>
+    <dl class="function">
+    <dt>
+    <a name = "GradientBox:SetX"></a>
+    <strong>GradientBox:SetX (x)</strong>
+    </dt>
+    <dd>
+    Set the X coordinate of the GradientBox.
+
+
+    <h3>Parameters:</h3>
+    <ul>
+        <li><span class="parameter">x</span>
+            <span class="types"><span class="type">number</span></span>
+
+        </li>
+    </ul>
+
+    <h3>Returns:</h3>
+    <ol>
+
+           <span class="types"><span class="type">bool</span></span>
+        success
+    </ol>
+
+
+
+
+</dd>
+    <dt>
+    <a name = "GradientBox:GetX"></a>
+    <strong>GradientBox:GetX ()</strong>
+    </dt>
+    <dd>
+    Get the X coordinate of the GradientBox.
+
+
+
+    <h3>Returns:</h3>
+    <ol>
+
+           <span class="types"><span class="type">number</span></span>
+        x
+    </ol>
+
+
+
+
+</dd>
+    <dt>
+    <a name = "GradientBox:SetY"></a>
+    <strong>GradientBox:SetY (y)</strong>
+    </dt>
+    <dd>
+    Set the Y coordinate of the GradientBox.
+
+
+    <h3>Parameters:</h3>
+    <ul>
+        <li><span class="parameter">y</span>
+            <span class="types"><span class="type">number</span></span>
+
+        </li>
+    </ul>
+
+    <h3>Returns:</h3>
+    <ol>
+
+           <span class="types"><span class="type">bool</span></span>
+        success
+    </ol>
+
+
+
+
+</dd>
+    <dt>
+    <a name = "GradientBox:GetY"></a>
+    <strong>GradientBox:GetY ()</strong>
+    </dt>
+    <dd>
+    Get the Y coordinate of the GradientBox.
+
+
+
+    <h3>Returns:</h3>
+    <ol>
+
+           <span class="types"><span class="type">number</span></span>
+        y
+    </ol>
+
+
+
+
+</dd>
+    <dt>
+    <a name = "GradientBox:SetWidth"></a>
+    <strong>GradientBox:SetWidth (width)</strong>
+    </dt>
+    <dd>
+    Set the width of the GradientBox.
+
+
+    <h3>Parameters:</h3>
+    <ul>
+        <li><span class="parameter">width</span>
+            <span class="types"><span class="type">positive_number</span></span>
+
+        </li>
+    </ul>
+
+    <h3>Returns:</h3>
+    <ol>
+
+           <span class="types"><span class="type">bool</span></span>
+        success
+    </ol>
+
+
+    <h3>See also:</h3>
+    <ul>
+         <a href="index.html#checkProperty">checkProperty</a>
+    </ul>
+
+
+</dd>
+    <dt>
+    <a name = "GradientBox:GetWidth"></a>
+    <strong>GradientBox:GetWidth ()</strong>
+    </dt>
+    <dd>
+    Get the width of the GradientBox.
+
+
+
+    <h3>Returns:</h3>
+    <ol>
+
+           <span class="types"><span class="type">positive_number</span></span>
+        width
+    </ol>
+
+
+    <h3>See also:</h3>
+    <ul>
+         <a href="index.html#checkProperty">checkProperty</a>
+    </ul>
+
+
+</dd>
+    <dt>
+    <a name = "GradientBox:SetHeight"></a>
+    <strong>GradientBox:SetHeight (height)</strong>
+    </dt>
+    <dd>
+    Set the height of the GradientBox.
+
+
+    <h3>Parameters:</h3>
+    <ul>
+        <li><span class="parameter">height</span>
+            <span class="types"><span class="type">positive_number</span></span>
+
+        </li>
+    </ul>
+
+    <h3>Returns:</h3>
+    <ol>
+
+           <span class="types"><span class="type">bool</span></span>
+        success
+    </ol>
+
+
+    <h3>See also:</h3>
+    <ul>
+         <a href="index.html#checkProperty">checkProperty</a>
+    </ul>
+
+
+</dd>
+    <dt>
+    <a name = "GradientBox:GetHeight"></a>
+    <strong>GradientBox:GetHeight ()</strong>
+    </dt>
+    <dd>
+    Get the height of the GradientBox.
+
+
+
+    <h3>Returns:</h3>
+    <ol>
+
+           <span class="types"><span class="type">positive_number</span></span>
+        height
+    </ol>
+
+
+    <h3>See also:</h3>
+    <ul>
+         <a href="index.html#checkProperty">checkProperty</a>
+    </ul>
+
+
+</dd>
+    <dt>
+    <a name = "GradientBox:SetColor1"></a>
+    <strong>GradientBox:SetColor1 (color1)</strong>
+    </dt>
+    <dd>
+    Set the first color of the GradientBox.
+
+
+    <h3>Parameters:</h3>
+    <ul>
+        <li><span class="parameter">color1</span>
+            <span class="types"><span class="type">color</span></span>
+
+        </li>
+    </ul>
+
+    <h3>Returns:</h3>
+    <ol>
+
+           <span class="types"><span class="type">bool</span></span>
+        success
+    </ol>
+
+
+    <h3>See also:</h3>
+    <ul>
+         <a href="index.html#checkProperty">checkProperty</a>
+    </ul>
+
+
+</dd>
+    <dt>
+    <a name = "GradientBox:GetColor1"></a>
+    <strong>GradientBox:GetColor1 ()</strong>
+    </dt>
+    <dd>
+    Get the first color of the GradientBox.
+
+
+
+    <h3>Returns:</h3>
+    <ol>
+
+           <span class="types"><span class="type">color</span></span>
+        color1
+    </ol>
+
+
+    <h3>See also:</h3>
+    <ul>
+         <a href="index.html#checkProperty">checkProperty</a>
+    </ul>
+
+
+</dd>
+    <dt>
+    <a name = "GradientBox:SetColor2"></a>
+    <strong>GradientBox:SetColor2 (color2)</strong>
+    </dt>
+    <dd>
+    Set the second color of the GradientBox.
+
+
+    <h3>Parameters:</h3>
+    <ul>
+        <li><span class="parameter">color2</span>
+            <span class="types"><span class="type">color</span></span>
+
+        </li>
+    </ul>
+
+    <h3>Returns:</h3>
+    <ol>
+
+           <span class="types"><span class="type">bool</span></span>
+        success
+    </ol>
+
+
+    <h3>See also:</h3>
+    <ul>
+         <a href="index.html#checkProperty">checkProperty</a>
+    </ul>
+
+
+</dd>
+    <dt>
+    <a name = "GradientBox:GetColor2"></a>
+    <strong>GradientBox:GetColor2 ()</strong>
+    </dt>
+    <dd>
+    Get the second color of the GradientBox.
+
+
+
+    <h3>Returns:</h3>
+    <ol>
+
+           <span class="types"><span class="type">color</span></span>
+        color2
+    </ol>
+
+
+    <h3>See also:</h3>
+    <ul>
+         <a href="index.html#checkProperty">checkProperty</a>
+    </ul>
+
+
+</dd>
+    <dt>
+    <a name = "GradientBox:SetOpacity1"></a>
+    <strong>GradientBox:SetOpacity1 (opacity1)</strong>
+    </dt>
+    <dd>
+    Set the first opacity of the GradientBox.
+
+
+    <h3>Parameters:</h3>
+    <ul>
+        <li><span class="parameter">opacity1</span>
+            <span class="types"><span class="type">percent</span></span>
+
+        </li>
+    </ul>
+
+    <h3>Returns:</h3>
+    <ol>
+
+           <span class="types"><span class="type">bool</span></span>
+        success
+    </ol>
+
+
+    <h3>See also:</h3>
+    <ul>
+         <a href="index.html#checkProperty">checkProperty</a>
+    </ul>
+
+
+</dd>
+    <dt>
+    <a name = "GradientBox:GetOpacity1"></a>
+    <strong>GradientBox:GetOpacity1 ()</strong>
+    </dt>
+    <dd>
+    Get the first opacity of the GradientBox.
+
+
+
+    <h3>Returns:</h3>
+    <ol>
+
+           <span class="types"><span class="type">percent</span></span>
+        opacity1
+    </ol>
+
+
+    <h3>See also:</h3>
+    <ul>
+         <a href="index.html#checkProperty">checkProperty</a>
+    </ul>
+
+
+</dd>
+    <dt>
+    <a name = "GradientBox:SetOpacity2"></a>
+    <strong>GradientBox:SetOpacity2 (opacity2)</strong>
+    </dt>
+    <dd>
+    Set the second opacity of the GradientBox.
+
+
+    <h3>Parameters:</h3>
+    <ul>
+        <li><span class="parameter">opacity2</span>
+            <span class="types"><span class="type">percent</span></span>
+
+        </li>
+    </ul>
+
+    <h3>Returns:</h3>
+    <ol>
+
+           <span class="types"><span class="type">bool</span></span>
+        success
+    </ol>
+
+
+    <h3>See also:</h3>
+    <ul>
+         <a href="index.html#checkProperty">checkProperty</a>
+    </ul>
+
+
+</dd>
+    <dt>
+    <a name = "GradientBox:GetOpacity2"></a>
+    <strong>GradientBox:GetOpacity2 ()</strong>
+    </dt>
+    <dd>
+    Get the second opacity of the GradientBox.
+
+
+
+    <h3>Returns:</h3>
+    <ol>
+
+           <span class="types"><span class="type">percent</span></span>
+        opacity2
+    </ol>
+
+
+    <h3>See also:</h3>
+    <ul>
+         <a href="index.html#checkProperty">checkProperty</a>
+    </ul>
+
+
+</dd>
+    <dt>
+    <a name = "GradientBox:SetGradient"></a>
+    <strong>GradientBox:SetGradient (gradient)</strong>
+    </dt>
+    <dd>
+    Set the gradient of the GradientBox
+
+
+    <h3>Parameters:</h3>
+    <ul>
+        <li><span class="parameter">gradient</span>
+            <span class="types"><span class="type">gradient</span></span>
+
+        </li>
+    </ul>
+
+    <h3>Returns:</h3>
+    <ol>
+
+           <span class="types"><span class="type">bool</span></span>
+        success
+    </ol>
+
+
+    <h3>See also:</h3>
+    <ul>
+         <a href="index.html#checkProperty">checkProperty</a>
+    </ul>
+
+
+</dd>
+    <dt>
+    <a name = "GradientBox:GetGradient"></a>
+    <strong>GradientBox:GetGradient ()</strong>
+    </dt>
+    <dd>
+    Get the gradient of the GradientBox
+
+
+
+    <h3>Returns:</h3>
+    <ol>
+
+           <span class="types"><span class="type">gradient</span></span>
+        gradient
+    </ol>
+
+
+    <h3>See also:</h3>
+    <ul>
+         <a href="index.html#checkProperty">checkProperty</a>
+    </ul>
+
+
+</dd>
+</dl>
+    <h2 class="section-header has-description"><a name="Class_GradientLine"></a>Class GradientLine </h2>
+
+          <div class="section-description">
+          A line Object with a color gradient.
+          </div>
+    <dl class="function">
+    <dt>
+    <a name = "GradientLine:SetP1"></a>
+    <strong>GradientLine:SetP1 (p1)</strong>
+    </dt>
+    <dd>
+    Set the first point of the GradientLine.  Copies the point, so modification of them after setting will not affect the Object.
+
+
+    <h3>Parameters:</h3>
+    <ul>
+        <li><span class="parameter">p1</span>
+            <span class="types"><span class="type">complexPoint</span></span>
+
+        </li>
+    </ul>
+
+    <h3>Returns:</h3>
+    <ol>
+
+           <span class="types"><span class="type">bool</span></span>
+        success
+    </ol>
+
+
+    <h3>See also:</h3>
+    <ul>
+         <a href="index.html#checkProperty">checkProperty</a>
+    </ul>
+
+
+</dd>
+    <dt>
+    <a name = "GradientLine:GetP1"></a>
+    <strong>GradientLine:GetP1 ()</strong>
+    </dt>
+    <dd>
+    Get the first point of the GradientLine.  Copies the point, so modification of them after getting will not affect the Object.
+
+
+
+    <h3>Returns:</h3>
+    <ol>
+
+           <span class="types"><span class="type">complexPoint</span></span>
+        p1
+    </ol>
+
+
+    <h3>See also:</h3>
+    <ul>
+         <a href="index.html#checkProperty">checkProperty</a>
+    </ul>
+
+
+</dd>
+    <dt>
+    <a name = "GradientLine:SetP2"></a>
+    <strong>GradientLine:SetP2 (p2)</strong>
+    </dt>
+    <dd>
+    Set the second point of the GradientLine.  Copies the point, so modification of them after setting will not affect the Object.
+
+
+    <h3>Parameters:</h3>
+    <ul>
+        <li><span class="parameter">p2</span>
+            <span class="types"><span class="type">complexPoint</span></span>
+
+        </li>
+    </ul>
+
+    <h3>Returns:</h3>
+    <ol>
+
+           <span class="types"><span class="type">bool</span></span>
+        success
+    </ol>
+
+
+    <h3>See also:</h3>
+    <ul>
+         <a href="index.html#checkProperty">checkProperty</a>
+    </ul>
+
+
+</dd>
+    <dt>
+    <a name = "GradientLine:GetP2"></a>
+    <strong>GradientLine:GetP2 ()</strong>
+    </dt>
+    <dd>
+    Get the second point of the GradientLine.  Copies the point, so modification of them after getting will not affect the Object.
+
+
+
+    <h3>Returns:</h3>
+    <ol>
+
+           <span class="types"><span class="type">complexPoint</span></span>
+        p2
+    </ol>
+
+
+    <h3>See also:</h3>
+    <ul>
+         <a href="index.html#checkProperty">checkProperty</a>
+    </ul>
+
+
+</dd>
+</dl>
+    <h2 class="section-header has-description"><a name="Class_GradientLineList"></a>Class GradientLineList </h2>
+
+          <div class="section-description">
+          A bunch of Gradient Lines (I think?)
+          </div>
+    <dl class="function">
+    <dt>
+    <a name = "GradientLineList:SetPoints"></a>
+    <strong>GradientLineList:SetPoints (points)</strong>
+    </dt>
+    <dd>
+    Set the terminal points of the GradientLineList.   Copies the points, so modification of them after setting will not affect the Object.
+
+
+    <h3>Parameters:</h3>
+    <ul>
+        <li><span class="parameter">points</span>
+            <span class="types"><span class="type">{complexPoint,...}</span></span>
+
+        </li>
+    </ul>
+
+    <h3>Returns:</h3>
+    <ol>
+
+           <span class="types"><span class="type">bool</span></span>
+        success
+    </ol>
+
+
+    <h3>See also:</h3>
+    <ul>
+         <a href="index.html#checkProperty">checkProperty</a>
+    </ul>
+
+
+</dd>
+    <dt>
+    <a name = "GradientLineList:GetPoints"></a>
+    <strong>GradientLineList:GetPoints ()</strong>
+    </dt>
+    <dd>
+    Get the array of terminal points of the GradientLineList.   Copies the points, so modification of them after getting will not affect the Object.
+
+
+
+    <h3>Returns:</h3>
+    <ol>
+
+           <span class="types"><span class="type">{complexPoint,...}</span></span>
+        points
+    </ol>
+
+
+    <h3>See also:</h3>
+    <ul>
+         <a href="index.html#checkProperty">checkProperty</a>
+    </ul>
+
+
+</dd>
+</dl>
+
+
+</div> <!-- id="content" -->
+</div> <!-- id="main" -->
+<div id="about">
+<i>generated by <a href="http://github.com/stevedonovan/LDoc">LDoc 1.4.3</a></i>
+<i style="float:right;">Last updated 2016-06-14 13:19:54 </i>
+</div> <!-- id="about" -->
+</div> <!-- id="container" -->
+</body>
+</html>
